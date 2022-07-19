@@ -14,7 +14,7 @@ data class TruvSuccessPayload(
         val employer: TruvEmployer?
     )
 
-companion object {
+    companion object {
 
         @Throws(JSONException::class)
         fun fromJson(json: String): TruvSuccessPayload {
@@ -33,5 +33,5 @@ companion object {
         }
 
     }
-    
+
 }

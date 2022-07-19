@@ -13,6 +13,7 @@ import android.widget.FrameLayout
 import com.truv.models.TruvEventPayload
 import com.truv.models.TruvSuccessPayload
 import org.json.JSONException
+import org.json.JSONObject
 
 class TruvBridgeView @JvmOverloads constructor(
     context: Context,
