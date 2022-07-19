@@ -13,7 +13,6 @@ import android.widget.FrameLayout
 import com.truv.models.TruvEventPayload
 import com.truv.models.TruvSuccessPayload
 import org.json.JSONException
-import org.json.JSONObject
 
 class TruvBridgeView @JvmOverloads constructor(
     context: Context,
@@ -79,7 +78,7 @@ class TruvBridgeView @JvmOverloads constructor(
         @JavascriptInterface
         fun onSuccess(payload: String) {
             Log.d(TAG, "onSuccess invoked $payload")
-
+            
             try {
                 val successPayload = TruvSuccessPayload.fromJson(payload)
                 eventListeners.forEach { it.onSuccess(successPayload) }
