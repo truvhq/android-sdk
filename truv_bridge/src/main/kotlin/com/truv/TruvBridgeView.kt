@@ -46,7 +46,7 @@ class TruvBridgeView @JvmOverloads constructor(
     fun hasBridgeToken(token: String): Boolean = webView.url?.contains(token) == true
 
     fun loadBridgeTokenUrl(bridgeToken: String) {
-        webView.loadUrl("https://cdn.citadelid.com/mobile.html?bridge_token=$bridgeToken")
+        webView.loadUrl("https://cdn.truv.com/mobile.html?bridge_token=$bridgeToken")
     }
 
     private inner class TruvWebViewClient : WebViewClient() {
