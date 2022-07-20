@@ -11,6 +11,8 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import com.truv.models.TruvEventPayload
+import com.truv.models.TruvSuccessPayload
+import org.json.JSONException
 import org.json.JSONObject
 
 class TruvBridgeView @JvmOverloads constructor(
@@ -77,7 +79,14 @@ class TruvBridgeView @JvmOverloads constructor(
         @JavascriptInterface
         fun onSuccess(payload: String) {
             Log.d(TAG, "onSuccess invoked $payload")
-            eventListeners.forEach { it.onSuccess() }
+            
+            try {
+                val successPayload = TruvSuccessPayload.fromJson(payload)
+                eventListeners.forEach { it.onSuccess(successPayload) }
+            } catch (e: JSONException) {
+                Log.e(TAG, "Json exception at onSuccess invoked $payload", e)
+                eventListeners.forEach { it.onError() }
+            }
         }
 
         @JavascriptInterface
