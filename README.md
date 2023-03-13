@@ -18,7 +18,7 @@ allprojects {
 **Step 2**. Add the dependency to your ```build.gradle``` file:
   
 ```
-implementation 'com.github.truvhq:android-sdk:0.2'
+implementation 'com.github.truvhq:android-sdk:1.0.0'
 ```
 
 The TruvSDK is available via JitPack [![](https://jitpack.io/v/truvhq/android-sdk.svg)](https://jitpack.io/#truvhq/android-sdk)
