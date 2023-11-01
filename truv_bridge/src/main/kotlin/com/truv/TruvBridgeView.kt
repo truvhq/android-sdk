@@ -21,6 +21,7 @@ class TruvBridgeView @JvmOverloads constructor(
 ) : FrameLayout(context, attrs) {
 
     private val eventListeners = mutableSetOf<TruvEventsListener>()
+    private var baseUrl = "https://cdn.truv.com/mobile.html"
 
     fun addEventListener(listener: TruvEventsListener) {
         eventListeners.add(listener)
@@ -28,6 +29,10 @@ class TruvBridgeView @JvmOverloads constructor(
 
     fun removeEventListener(listener: TruvEventsListener): Boolean {
         return eventListeners.remove(listener)
+    }
+
+    fun UNSAFEoverrideBaseUrl(url: String) {
+        baseUrl = url
     }
 
     private val webView = WebView(context).apply {
@@ -48,7 +53,7 @@ class TruvBridgeView @JvmOverloads constructor(
     fun hasBridgeToken(token: String): Boolean = webView.url?.contains(token) == true
 
     fun loadBridgeTokenUrl(bridgeToken: String) {
-        webView.loadUrl("https://cdn.truv.com/mobile.html?bridge_token=$bridgeToken")
+        webView.loadUrl("$baseUrl?bridge_token=$bridgeToken")
     }
 
     private inner class TruvWebViewClient : WebViewClient() {
@@ -93,10 +98,11 @@ class TruvBridgeView @JvmOverloads constructor(
         fun onEvent(event: String) {
             Log.d(TAG, "onEvent invoked $event")
 
-            val json = JSONObject(event)
-            val type = json.getString("event_type")
-
-            eventListeners.forEach { it.onEvent(TruvEventPayload.EventType.valueOf(type)) }
+            eventListeners.forEach {
+                it.onEvent(
+                    TruvEventPayload.fromJson(event)
+                )
+            }
         }
 
         @JavascriptInterface
