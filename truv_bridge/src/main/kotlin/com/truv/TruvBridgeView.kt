@@ -31,7 +31,7 @@ class TruvBridgeView @JvmOverloads constructor(
         return eventListeners.remove(listener)
     }
 
-    fun UNSAFEoverrideBaseUrl(url: String) {
+    fun UNSAFEOverrideBaseUrl(url: String) {
         baseUrl = url
     }
 
@@ -98,10 +98,12 @@ class TruvBridgeView @JvmOverloads constructor(
         fun onEvent(event: String) {
             Log.d(TAG, "onEvent invoked $event")
 
-            eventListeners.forEach {
-                it.onEvent(
-                    TruvEventPayload.fromJson(event)
-                )
+            try {
+                val eventPayload = TruvEventPayload.fromJson(event)
+                eventListeners.forEach { it.onEvent(eventPayload) }
+            } catch (e: JSONException) {
+                Log.e(TAG, "Json exception at onEvent invoked $event", e)
+                eventListeners.forEach { it.onError() }
             }
         }
 
