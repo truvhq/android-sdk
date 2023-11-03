@@ -21,7 +21,7 @@ class TruvBridgeView @JvmOverloads constructor(
 ) : FrameLayout(context, attrs) {
 
     private val eventListeners = mutableSetOf<TruvEventsListener>()
-    private var baseUrl = "https://cdn.truv.com/mobile.html"
+    private val baseUrl = "https://cdn.truv.com/mobile.html"
 
     fun addEventListener(listener: TruvEventsListener) {
         eventListeners.add(listener)
@@ -29,10 +29,6 @@ class TruvBridgeView @JvmOverloads constructor(
 
     fun removeEventListener(listener: TruvEventsListener): Boolean {
         return eventListeners.remove(listener)
-    }
-
-    fun UNSAFEOverrideBaseUrl(url: String) {
-        baseUrl = url
     }
 
     private val webView = WebView(context).apply {
