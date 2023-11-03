@@ -99,7 +99,6 @@ class TruvBridgeView @JvmOverloads constructor(
                 eventListeners.forEach { it.onEvent(eventPayload) }
             } catch (e: JSONException) {
                 Log.e(TAG, "Json exception at onEvent invoked $event", e)
-                eventListeners.forEach { it.onError() }
             }
         }
 
