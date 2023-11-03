@@ -40,39 +40,43 @@ data class TruvEventPayload(
         fun fromJson(event: String): TruvEventPayload {
             val json = JSONObject(event)
             val type = json.getString("event_type")
-            val payloadJson = json.getJSONObject("payload")
+            val payloadJson = json.optJSONObject("payload")
 
-            val bridgeToken = payloadJson.optString("bridge_token")
-            val taskId = payloadJson.optString("task_id")
-            val productType = payloadJson.optString("product_type")
-            val publicToken = payloadJson.optString("public_token")
-            val viewName = payloadJson.optString("view_name")
-            val providerId = payloadJson.optString("provider_id")
+            val payload = payloadJson?.let { payloadJson ->
+                val bridgeToken = payloadJson.optString("bridge_token")
+                val taskId = payloadJson.optString("task_id")
+                val productType = payloadJson.optString("product_type")
+                val publicToken = payloadJson.optString("public_token")
+                val viewName = payloadJson.optString("view_name")
+                val providerId = payloadJson.optString("provider_id")
 
-            val employerJson = payloadJson.optJSONObject("employer")
-            val employer = employerJson?.let { employerJson ->
-                TruvEmployer(employerJson.getString("name"))
-            }
+                val employerJson = payloadJson.optJSONObject("employer")
+                val employer = employerJson?.let { employerJson ->
+                    TruvEmployer(employerJson.getString("name"))
+                }
 
-            val errorJson = payloadJson.optJSONObject("error")
-            val error = errorJson?.let { errorJson ->
-                TruvError(
-                    type = errorJson.getString("type"),
-                    code = TruvError.ErrorCode.valueOf(errorJson.getString("code")),
-                    message = errorJson.getString("message")
+                val errorJson = payloadJson.optJSONObject("error")
+                val error = errorJson?.let { errorJson ->
+                    TruvError(
+                        type = errorJson.getString("type"),
+                        code = TruvError.ErrorCode.valueOf(errorJson.getString("code")),
+                        message = errorJson.getString("message")
+                    )
+                }
+
+                Payload(
+                    bridgeToken = bridgeToken,
+                    productType = productType,
+                    viewName = viewName,
+                    employer = employer,
+                    publicToken = publicToken,
+                    taskId = taskId,
+                    providerId = providerId,
+                    error = error,
                 )
             }
 
-            return TruvEventPayload(eventType = EventType.valueOf(type), payload = Payload(
-                bridgeToken = bridgeToken,
-                productType = productType,
-                viewName = viewName,
-                employer = employer,
-                publicToken = publicToken,
-                taskId = taskId,
-                providerId = providerId,
-                error = error,
-            ))
+            return TruvEventPayload(eventType = EventType.valueOf(type), payload = payload)
         }
 
     }
