@@ -6,19 +6,18 @@
 
 **Step 1**. Add the JitPack repository to your project ```build.gradle``` file
 
-```
+```groovy
 allprojects {
-		repositories {
-			...
-			maven { url 'https://jitpack.io' }
-		}
-	}
+    repositories {
+        maven { url 'https://jitpack.io' }
+    }
+}
 ```
 
 **Step 2**. Add the dependency to your ```build.gradle``` file:
   
 ```
-implementation 'com.github.truvhq:android-sdk:1.0.0'
+implementation 'com.github.truvhq:android-sdk:1.1.2'
 ```
 
 The TruvSDK is available via JitPack [![](https://jitpack.io/v/truvhq/android-sdk.svg)](https://jitpack.io/#truvhq/android-sdk)
