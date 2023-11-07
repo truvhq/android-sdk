@@ -38,8 +38,10 @@ class TruvBridgeView @JvmOverloads constructor(
         webViewClient = TruvWebViewClient()
         addJavascriptInterface(WebAppInterface(), "citadelInterface")
         setOnKeyListener { _, keyCode, keyEvent ->
-            if (keyEvent.action == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_BACK
-                && canGoBack()) {
+            if (keyEvent.action == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_BACK) {
+                evaluateJavascript("window.bridge?.back();") {
+                    Log.d(TAG, "On Back pressed")
+                }
                 return@setOnKeyListener true
             }
             return@setOnKeyListener super.onKeyDown(keyCode, keyEvent)
