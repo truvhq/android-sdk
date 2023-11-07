@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.util.AttributeSet
 import android.util.Log
+import android.view.KeyEvent
 import android.webkit.JavascriptInterface
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
@@ -13,7 +14,6 @@ import android.widget.FrameLayout
 import com.truv.models.TruvEventPayload
 import com.truv.models.TruvSuccessPayload
 import org.json.JSONException
-import org.json.JSONObject
 
 class TruvBridgeView @JvmOverloads constructor(
     context: Context,
@@ -37,6 +37,15 @@ class TruvBridgeView @JvmOverloads constructor(
         settings.domStorageEnabled = true
         webViewClient = TruvWebViewClient()
         addJavascriptInterface(WebAppInterface(), "citadelInterface")
+        setOnKeyListener { _, keyCode, keyEvent ->
+            if (keyEvent.action == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_BACK) {
+                evaluateJavascript("window.bridge?.back();") {
+                    Log.d(TAG, "On Back pressed")
+                }
+                return@setOnKeyListener true
+            }
+            return@setOnKeyListener super.onKeyDown(keyCode, keyEvent)
+        }
     }
 
     init {
