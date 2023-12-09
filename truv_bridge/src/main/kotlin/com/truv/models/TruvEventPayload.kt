@@ -17,7 +17,8 @@ data class TruvEventPayload(
         val publicToken: String?,
         val taskId: String?,
         val providerId: String?,
-        val error: TruvError?
+        val error: TruvError?,
+        val externalLoginConfig: ExternalLoginConfig?
     )
 
 
@@ -55,6 +56,15 @@ data class TruvEventPayload(
                     TruvEmployer(employerJson.getString("name"))
                 }
 
+                // External login
+                val isLoggedIn = payloadJson.optJSONObject("is_logged_in")
+                val selector = isLoggedIn?.optString("selector")
+                val url = payloadJson.optString("url")
+
+                val externalLoginConfig = if (!selector.isNullOrEmpty() && !url.isNullOrEmpty()) {
+                    ExternalLoginConfig(url = url, selector = selector)
+                } else null
+
                 val errorJson = payloadJson.optJSONObject("error")
                 val error = errorJson?.let { errorJson ->
                     TruvError(
@@ -73,10 +83,14 @@ data class TruvEventPayload(
                     taskId = taskId,
                     providerId = providerId,
                     error = error,
+                    externalLoginConfig = externalLoginConfig
                 )
             }
 
-            return TruvEventPayload(eventType = EventType.valueOf(type), payload = payload)
+            return TruvEventPayload(
+                eventType = EventType.valueOf(type),
+                payload = payload
+            )
         }
 
     }
