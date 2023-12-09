@@ -7,7 +7,7 @@ import kotlin.jvm.Throws
 data class TruvSuccessPayload(
     val publicToken: String,
     val metadata: Metadata,
-    val json: String
+    val raw: String
 ) {
 
     class Metadata(

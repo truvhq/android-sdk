@@ -21,7 +21,6 @@ data class TruvEventPayload(
         val externalLoginConfig: ExternalLoginConfig?
     )
 
-
     enum class EventType(event: String) {
         LOAD("LOAD"),
         OPEN("OPEN"),
@@ -32,6 +31,7 @@ data class TruvEventPayload(
         SUCCESS("SUCCESS"),
         ERROR("ERROR"),
         UNSUPPORTED_BROWSER("UNSUPPORTED_BROWSER"),
+        START_EXTERNAL_LOGIN("START_EXTERNAL_LOGIN"),
         CLOSE("CLOSE")
     }
 
