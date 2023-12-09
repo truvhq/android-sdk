@@ -1,47 +1,37 @@
 package com.truv.webview
 
-import android.app.Activity
 import android.content.Context
-import android.content.Intent
-import android.net.Uri
 import android.util.AttributeSet
 import android.util.Log
 import android.view.KeyEvent
 import android.view.View
-import android.webkit.ValueCallback
-import android.webkit.WebChromeClient
 import android.webkit.WebView
-import androidx.browser.customtabs.CustomTabsIntent
 import androidx.coordinatorlayout.widget.CoordinatorLayout
-import androidx.core.app.ActivityCompat.startActivityForResult
-import com.truv.BuildConfig
-import com.truv.R
 import com.truv.models.ExternalLoginConfig
 import com.truv.models.TruvEventPayload
 import com.truv.models.TruvSuccessPayload
-import com.truv.webview.models.Cookie
 import org.json.JSONArray
 import org.json.JSONObject
 
 class TruvBridgeView @JvmOverloads constructor(
     context: Context,
-    attrs: AttributeSet? = null,
+    attrs: AttributeSet? = null
 ) : CoordinatorLayout(context, attrs) {
 
-    private val CHOOSE_FILE_REQUEST_CODE = 101
-    private var filePathCallback: ValueCallback<Array<Uri>>? = null
     private val eventListeners = mutableSetOf<TruvEventsListener>()
 
     private val bottomSheetEventListener: TruvEventsListener by lazy {
         object : TruvEventsListener {
 
             override fun onSuccess(payload: TruvSuccessPayload) {
-                externalWebViewBottomSheet.dismiss()
+                bottomSheetWebView.dismiss()
 
-                val dataWithTags = JSONObject(payload.json)
+                val dataWithTags = JSONObject(payload.raw)
+
                 val tags = JSONArray().apply {
                     put("platform:android")
-                    put("sdk-version:${BuildConfig.VERSION_NAME}")
+                    // TODO: CHANGE TO SDK VERSION
+                    put("sdk-version:1.4.0")
                     put("source:android-sdk")
                 }
 
@@ -76,15 +66,8 @@ class TruvBridgeView @JvmOverloads constructor(
         }
     }
 
-    private val externalWebViewBottomSheet: ExternalWebViewBottomSheet by lazy {
-        ExternalWebViewBottomSheet(
-            context = context,
-            styleRes = R.style.BottomSheetDialogHandleOutside,
-            eventListeners = setOf(bottomSheetEventListener),
-            onCookie = { cookies, pageUrl ->
-                sendCookies(cookies, pageUrl)
-                externalWebViewBottomSheet.dismiss()
-            }).apply {
+    private val bottomSheetWebView: ExternalWebViewBottomSheet by lazy {
+        ExternalWebViewBottomSheet(context, setOf(bottomSheetEventListener)).apply {
             setOnDismissListener {
                 webView.evaluateJavascript(Constants.SCRIPT_EXTERNAL_LOGIN_CANCEL) { result ->
                     Log.d(TAG, "On External closed: $result")
@@ -93,43 +76,12 @@ class TruvBridgeView @JvmOverloads constructor(
         }
     }
 
-    private fun sendCookies(
-        cookies: List<Cookie>,
-        pageUrl: String
-    ) {
-        val data = JSONObject().apply {
-            put("cookies", JSONArray().apply {
-                cookies.forEach {
-                    put(it.toJson())
-                }
-            })
-            put("dashboard_url", pageUrl)
-        }
-        webView.evaluateJavascript(
-            String.format(
-                Constants.SCRIPT_EXTERNAL_LOGIN_SUCCESS,
-                data.toString()
-            )
-        ) { result ->
-            Log.d(TAG, "On External cookie: $result")
-        }
-    }
-
     private val webView = WebView(context).apply {
         id = View.generateViewId()
         settings.javaScriptEnabled = true
         settings.allowContentAccess = true
         settings.domStorageEnabled = true
-        webViewClient = TruvWebViewClient(context, eventListeners, openExternalLinkInAppBrowser = {url ->
-            showExternalBrowser(url)
-        })
-        webChromeClient = object: WebChromeClient() {
-            override fun onShowFileChooser(webView: WebView, filePathCallback: ValueCallback<Array<Uri>>?, fileChooserParams: FileChooserParams?): Boolean {
-                (context as? Activity)?.startActivityForResult(fileChooserParams?.createIntent(), CHOOSE_FILE_REQUEST_CODE)
-                this@TruvBridgeView.filePathCallback = filePathCallback
-                return true
-            }
-        }
+        webViewClient = TruvWebViewClient(context, eventListeners)
         addJavascriptInterface(WebAppInterface(eventListeners) {
             Log.d("TruvBridgeView", "Open external login")
             showExternalWebView(config = it)
@@ -145,32 +97,15 @@ class TruvBridgeView @JvmOverloads constructor(
         }
     }
 
-    fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        when (requestCode) {
-            CHOOSE_FILE_REQUEST_CODE -> {
-                if (resultCode == Activity.RESULT_OK) {
-                    filePathCallback?.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, data))
-                    filePathCallback = null
-                }
-            }
-        }
-    }
-
-    private fun showExternalBrowser(url: String) {
-        val intent: CustomTabsIntent = CustomTabsIntent.Builder()
-            .build()
-        intent.launchUrl(this@TruvBridgeView.context, Uri.parse(url))
-    }
-
     init {
         addView(webView, LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
     }
 
     private fun showExternalWebView(config: ExternalLoginConfig) {
         post {
-            externalWebViewBottomSheet.setContentView()
-            externalWebViewBottomSheet.show()
-            externalWebViewBottomSheet.config = config
+            bottomSheetWebView.setContentView()
+            bottomSheetWebView.show()
+            bottomSheetWebView.config = config
         }
     }
 
