@@ -1,4 +1,4 @@
-package com.truv
+package com.truv.webview
 
 import com.truv.models.TruvEventPayload
 import com.truv.models.TruvSuccessPayload
