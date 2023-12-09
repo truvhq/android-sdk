@@ -16,8 +16,14 @@ allprojects {
 
 **Step 2**. Add the dependency to your ```build.gradle``` file:
   
+``` groovy
+implementation 'com.github.truvhq:android-sdk:1.4.0'
 ```
-implementation 'com.github.truvhq:android-sdk:1.2.0'
+
+Or ```build.gradle.kts``` if you prefer Kotlin DSL
+
+```kotlin
+implementation("com.github.truvhq:android-sdk:1.4.0")
 ```
 
 The TruvSDK is available via JitPack [![](https://jitpack.io/v/truvhq/android-sdk.svg)](https://jitpack.io/#truvhq/android-sdk)
@@ -32,6 +38,28 @@ The TruvBridgeView is a `View` that you can integrate into your app's flow like 
     android:id="@+id/bridgeView"
     android:layout_width="match_parent"
     android:layout_height="match_parent" />
+```
+
+If you using `Compose`, just wrap `TruvBridgeView` with `AndroidView`
+```kotlin
+@Composable
+fun TruvBridge(eventsListener: TruvEventsListener) {
+    // Adds view to Compose
+    AndroidView(
+        modifier = Modifier.fillMaxSize(), // Occupy the max size in the Compose UI tree
+        factory = { context ->
+            // Creates view
+            TruvBridgeView(context).apply {
+                // Sets up listeners for View -> Compose communication
+                addEventListener(eventsListener)
+            }
+        },
+        update = { view ->
+            // View's been inflated or state read in this block has been updated
+            // Add logic here if necessary
+        }
+    )
+}
 ```
 
 ```kotlin

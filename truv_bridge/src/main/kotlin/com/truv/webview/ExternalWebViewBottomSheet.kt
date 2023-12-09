@@ -84,7 +84,7 @@ class ExternalWebViewBottomSheet(
         }
 
         (webView.parent as? ViewGroup)?.removeAllViews()
-        super.setContentView(webView,)
+        super.setContentView(webView)
     }
 
     override fun dismiss() {
