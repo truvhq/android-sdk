@@ -26,7 +26,7 @@ class TruvBridgeView @JvmOverloads constructor(
             override fun onSuccess(payload: TruvSuccessPayload) {
                 bottomSheetWebView.dismiss()
 
-                val dataWithTags = JSONObject(payload.raw)
+                val dataWithTags = JSONObject(payload.json)
 
                 val tags = JSONArray().apply {
                     put("platform:android")

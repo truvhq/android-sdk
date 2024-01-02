@@ -9,7 +9,7 @@ data class TruvEventPayload(
     val eventType: EventType
 ) {
 
-    class Payload(
+    data class Payload(
         val bridgeToken: String?,
         val productType: String?,
         val viewName: String?,
