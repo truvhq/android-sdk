@@ -19,10 +19,6 @@ class TruvWebViewClient(
         request?.let {
             view?.loadUrl(it.url.toString())
         }
-//        val i = Intent(Intent.ACTION_VIEW)
-//        i.data = request?.url
-//
-//        context.startActivity(i)
         return true
     }
 
