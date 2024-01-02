@@ -66,7 +66,7 @@ class ExternalWebViewBottomSheet(
 
     private fun startRefreshTimer() {
         webView.handler?.removeCallbacks(timerRunnable)
-        webView.handler?.postDelayed(timerRunnable, 2000L)
+        webView.handler?.postDelayed(timerRunnable, DELAY_MILLIS)
     }
 
     fun setContentView() {
@@ -90,6 +90,10 @@ class ExternalWebViewBottomSheet(
     override fun dismiss() {
         webView.handler?.removeCallbacks(timerRunnable)
         super.dismiss()
+    }
+
+    companion object {
+        private const val DELAY_MILLIS = 2000L
     }
 
 }
