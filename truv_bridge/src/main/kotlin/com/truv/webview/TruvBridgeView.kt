@@ -7,6 +7,7 @@ import android.view.KeyEvent
 import android.view.View
 import android.webkit.WebView
 import androidx.coordinatorlayout.widget.CoordinatorLayout
+import com.truv.BuildConfig
 import com.truv.models.ExternalLoginConfig
 import com.truv.models.TruvEventPayload
 import com.truv.models.TruvSuccessPayload
@@ -27,11 +28,9 @@ class TruvBridgeView @JvmOverloads constructor(
                 bottomSheetWebView.dismiss()
 
                 val dataWithTags = JSONObject(payload.json)
-
                 val tags = JSONArray().apply {
                     put("platform:android")
-                    // TODO: CHANGE TO SDK VERSION
-                    put("sdk-version:1.4.0")
+                    put("sdk-version:${BuildConfig.VERSION_NAME}")
                     put("source:android-sdk")
                 }
 
