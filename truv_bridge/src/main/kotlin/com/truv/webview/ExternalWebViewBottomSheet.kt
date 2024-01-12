@@ -2,6 +2,7 @@ package com.truv.webview
 
 import android.content.Context
 import android.graphics.Color
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.WebView
@@ -11,6 +12,8 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.truv.models.ExternalLoginConfig
 import com.truv.models.MiddleWareResponseDto
 import com.truv.models.ResponseDto
+import com.truv.network.HttpRequest
+import com.truv.network.Method
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -37,7 +40,7 @@ class ExternalWebViewBottomSheet(
         settings.allowContentAccess = true
         settings.domStorageEnabled = true
         setBackgroundColor(Color.WHITE)
-        webViewClient = TruvWebViewClient(context, eventListeners, onLoaded =  {
+        webViewClient = TruvWebViewClient(context, eventListeners, onLoaded = {
             config?.script?.let { script ->
                 runBlocking {
                     applyScript(script)
@@ -51,8 +54,22 @@ class ExternalWebViewBottomSheet(
         }, "callbackInterface")
     }
 
-    private fun performRequest(parse: MiddleWareResponseDto) {
-        
+    private fun performRequest(responseDto: MiddleWareResponseDto) {
+        val parameters: Map<String, String?> = responseDto.payload?.let {
+            mapOf(
+                "adpDeviceFingerprint" to it.adpDeviceFingerprint,
+                "identifier" to it.identifier,
+                "session" to it.session
+            )
+        } ?: mapOf()
+        HttpRequest(
+            method = Method.POST,
+            headers = responseDto.headers?.keyValue ?: mapOf(),
+            parameters = parameters.mapValues { it.value ?: "" },
+            url = config?.script?.callbackUrl.orEmpty()
+        ).json<String> { t, httpResponse ->
+            Log.d("ExternalWebView", "performRequest: $t")
+        }
     }
 
     private suspend fun applyScript(script: ResponseDto.Payload.Script) {
