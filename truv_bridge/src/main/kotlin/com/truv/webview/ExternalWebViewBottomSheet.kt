@@ -2,8 +2,6 @@ package com.truv.webview
 
 import android.content.Context
 import android.graphics.Color
-import android.os.Handler
-import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.WebView
@@ -11,10 +9,12 @@ import android.widget.FrameLayout
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.truv.models.ExternalLoginConfig
+import com.truv.models.MiddleWareResponseDto
 import com.truv.models.ResponseDto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import org.json.JSONObject
 import java.net.URL
 
 class ExternalWebViewBottomSheet(
@@ -28,11 +28,6 @@ class ExternalWebViewBottomSheet(
             if (value != null) {
                 webView.loadUrl(value.url)
                 startRefreshTimer()
-                if (value.script != null) {
-                    runBlocking {
-                        applyScript(value.script)
-                    }
-                }
             }
         }
 
@@ -42,14 +37,28 @@ class ExternalWebViewBottomSheet(
         settings.allowContentAccess = true
         settings.domStorageEnabled = true
         setBackgroundColor(Color.WHITE)
-        webViewClient = TruvWebViewClient(context, eventListeners)
+        webViewClient = TruvWebViewClient(context, eventListeners, onLoaded =  {
+            config?.script?.let { script ->
+                runBlocking {
+                    applyScript(script)
+                }
+            }
+        })
         addJavascriptInterface(WebAppInterface(eventListeners), Constants.CITADEL_INTERFACE)
+        addJavascriptInterface(MiddleWareInterface {
+            val responseDto = MiddleWareResponseDto.parse(JSONObject(it))
+            performRequest(responseDto)
+        }, "callbackInterface")
+    }
+
+    private fun performRequest(parse: MiddleWareResponseDto) {
+        
     }
 
     private suspend fun applyScript(script: ResponseDto.Payload.Script) {
         withContext(Dispatchers.IO) {
             val scriptText = URL(script.url).readText()
-            Handler(Looper.getMainLooper()).post {
+            webView.handler?.post {
                 webView.evaluateJavascript(scriptText, null)
 
             }
