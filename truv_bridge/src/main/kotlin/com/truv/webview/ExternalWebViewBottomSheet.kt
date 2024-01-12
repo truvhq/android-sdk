@@ -13,7 +13,6 @@ import com.truv.models.ExternalLoginConfig
 import com.truv.models.MiddleWareResponseDto
 import com.truv.models.ResponseDto
 import com.truv.network.HttpRequest
-import com.truv.network.Method
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -50,22 +49,17 @@ class ExternalWebViewBottomSheet(
         addJavascriptInterface(WebAppInterface(eventListeners), Constants.CITADEL_INTERFACE)
         addJavascriptInterface(MiddleWareInterface {
             val responseDto = MiddleWareResponseDto.parse(JSONObject(it))
-            performRequest(responseDto)
+            performRequest(it)
         }, "callbackInterface")
     }
 
-    private fun performRequest(responseDto: MiddleWareResponseDto) {
-        val parameters: Map<String, String?> = responseDto.payload?.let {
-            mapOf(
-                "adpDeviceFingerprint" to it.adpDeviceFingerprint,
-                "identifier" to it.identifier,
-                "session" to it.session
-            )
-        } ?: mapOf()
+    private fun performRequest(responseString : String) {
         HttpRequest(
-            method = Method.POST,
-            headers = responseDto.headers?.keyValue ?: mapOf(),
-            parameters = parameters.mapValues { it.value ?: "" },
+            headers = mapOf(
+                "Content-Type" to config?.script?.callbackHeaders?.contentType.orEmpty(),
+                "X-Access-Token" to config?.script?.callbackHeaders?.xAccessToken.orEmpty(),
+            ),
+            body = responseString,
             url = config?.script?.callbackUrl.orEmpty()
         ).json<String> { t, httpResponse ->
             Log.d("ExternalWebView", "performRequest: $t")
@@ -77,7 +71,6 @@ class ExternalWebViewBottomSheet(
             val scriptText = URL(script.url).readText()
             webView.handler?.post {
                 webView.evaluateJavascript(scriptText, null)
-
             }
         }
     }

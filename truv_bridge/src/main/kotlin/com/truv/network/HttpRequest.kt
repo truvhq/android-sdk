@@ -1,49 +1,49 @@
 package com.truv.network
 
 
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
-import java.net.URLEncoder
 import java.util.concurrent.Executors
 
 class HttpRequest(
     val url: String,
-    val method: Method = Method.GET,
-    val parameters: Map<String, Any> = mapOf(),
+    val body: String = "",
     val headers: Map<String, String> = mapOf(),
     val config: ((HttpURLConnection) -> Unit)? = null
 ) {
     fun response(completion: (HttpResponse) -> Unit) {
         Executors.newSingleThreadExecutor().execute {
             try {
-                val url = if (method == Method.GET && parameters.isNotEmpty()) {
-                    URL("$url?${parameters.query}")
-                } else {
-                    URL(url)
-                }
+                val url = URL(url)
                 val connection = url.openConnection() as HttpURLConnection
-                connection.requestMethod = method.value
+                connection.requestMethod = "POST"
                 headers.forEach { (key, value) ->
                     connection.setRequestProperty(key, value)
                 }
                 config?.let { it(connection) }
-                if (method == Method.POST && parameters.isNotEmpty()) {
-                    connection.doOutput = true
-                    connection.outputStream.use {
-                        it.write(parameters.query.toByteArray())
-                    }
+                connection.doOutput = true
+                connection.outputStream.use {
+                    it.write(body.toByteArray())
                 }
                 val response = HttpResponse()
                 response.connection = connection
-                response.body = connection.inputStream.use {
+                //for debug reasons
+//                val responseMessage = connection.responseMessage
+//                val responseCode = connection.responseCode
+//                val bufferere = BufferedReader( InputStreamReader(connection.getErrorStream()))
+//                var strCurrentLine: String?
+//                while (bufferere.readLine().also { strCurrentLine = it } != null) {
+//                    println(strCurrentLine)
+//                }
+                val use = connection.inputStream.use {
                     BufferedReader(InputStreamReader(it)).use { reader ->
                         reader.readText()
                     }
                 }
+                response.body = use
                 connection.disconnect()
                 completion(response)
             } catch (e: Exception) {
@@ -72,11 +72,6 @@ class HttpRequest(
     }
 }
 
-enum class Method(val value: String) {
-    GET("GET"), HEAD("HEAD"), POST("POST"), PUT("PUT"),
-    DELETE("DELETE"), OPTIONS("OPTIONS"), TRACE("TRACE"), PATCH("PATCH")
-}
-
 class HttpResponse {
     var connection: HttpURLConnection? = null
     var body: String? = null
@@ -86,9 +81,3 @@ class HttpResponse {
         return false
     }
 }
-
-val Map<String, Any>.query: String get() {
-    return this.map { (key, value) -> "$key=${value.urlEncoded}" }.joinToString("&")
-}
-
-val Any.urlEncoded: String get() = URLEncoder.encode(toString(), "UTF-8")
