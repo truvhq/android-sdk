@@ -2,11 +2,15 @@ package com.truv.webview
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.util.Log
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import com.truv.models.ExternalLoginConfig
+import java.net.HttpURLConnection
+import java.net.URL
+
 
 class TruvWebViewClient(
     private val context: Context,
@@ -16,6 +20,16 @@ class TruvWebViewClient(
 
     private var loadingFinished = true
     private var redirect = false
+
+    override fun shouldInterceptRequest(
+        view: WebView?,
+        request: WebResourceRequest
+    ): WebResourceResponse? {
+        if (request.requestHeaders.containsKey("X-Requested-With")) {
+            request.requestHeaders.remove("X-Requested-With")
+        }
+        return super.shouldInterceptRequest(view,request)
+    }
 
     override fun shouldOverrideUrlLoading(
         view: WebView?,
@@ -58,4 +72,32 @@ class TruvWebViewClient(
 
     }
 
+
+//    private fun interceptRequest(
+//        url: String,
+//        requestHeaders: MutableMap<String, String>
+//    ): WebResourceResponse? {
+//
+//        try {
+//
+//
+//            val connection = URL(url).openConnection() as HttpURLConnection
+//            // Удаление заголовка X-Requested-With
+//            val remove = requestHeaders.remove("X-Requested-With")
+//            remove?.let {
+//                Log.d("", "removed")
+//            }
+//            for ((key, value) in requestHeaders) {
+//                connection.setRequestProperty(key, value)
+//            }
+//            val inputStream = connection.inputStream
+//            val mimeType = connection.getHeaderField("Content-Type")
+//            val encoding = connection.contentEncoding
+//            return WebResourceResponse(mimeType, encoding, inputStream)
+//
+//        } catch (ex: Exception) {
+//            Log.e("",ex.localizedMessage)
+//            return null
+//        }
+//    }
 }

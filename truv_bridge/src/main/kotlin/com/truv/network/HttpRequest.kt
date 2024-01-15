@@ -31,19 +31,19 @@ class HttpRequest(
                 val response = HttpResponse()
                 response.connection = connection
                 //for debug reasons
-//                val responseMessage = connection.responseMessage
-//                val responseCode = connection.responseCode
-//                val bufferere = BufferedReader( InputStreamReader(connection.getErrorStream()))
-//                var strCurrentLine: String?
-//                while (bufferere.readLine().also { strCurrentLine = it } != null) {
-//                    println(strCurrentLine)
-//                }
-                val use = connection.inputStream.use {
+                val responseMessage = connection.responseMessage
+                val responseCode = connection.responseCode
+                val errorBuffer = BufferedReader( InputStreamReader(connection.getErrorStream()))
+                var strCurrentLine: String?
+                while (errorBuffer.readLine().also { strCurrentLine = it } != null) {
+                    println(strCurrentLine)
+                }
+                val responseBody = connection.inputStream.use {
                     BufferedReader(InputStreamReader(it)).use { reader ->
                         reader.readText()
                     }
                 }
-                response.body = use
+                response.body = responseBody
                 connection.disconnect()
                 completion(response)
             } catch (e: Exception) {
