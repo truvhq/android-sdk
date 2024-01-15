@@ -46,6 +46,9 @@ class ExternalWebViewBottomSheet(
                 }
             }
         })
+        //https://www.whatismybrowser.com/guides/the-latest-user-agent/chrome
+        val USER_AGENT = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.210 Mobile Safari/537.36"
+        settings.userAgentString = USER_AGENT;
         addJavascriptInterface(WebAppInterface(eventListeners), Constants.CITADEL_INTERFACE)
         addJavascriptInterface(MiddleWareInterface {
             val responseDto = MiddleWareResponseDto.parse(JSONObject(it))
