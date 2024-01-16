@@ -59,45 +59,23 @@ class TruvWebViewClient(
         loadingFinished = false;
     }
 
-    override fun onPageFinished(view: WebView?, url: String?) {
-        super.onPageFinished(view, url)
-        if (!redirect) {
-            loadingFinished = true;
-        }
-        if (loadingFinished && !redirect) {
-            onLoaded()
-        } else {
-            redirect = false;
-        }
+//    override fun onPageFinished(view: WebView?, url: String?) {
+//        super.onPageFinished(view, url)
+//        if (!redirect) {
+//            loadingFinished = true;
+//        }
+//        if (loadingFinished && !redirect) {
+//            onLoaded()
+//        } else {
+//            redirect = false;
+//        }
+//
+//    }
 
+    override fun onPageCommitVisible(view: WebView?, url: String?) {
+        super.onPageCommitVisible(view, url)
+        onLoaded()
     }
 
 
-//    private fun interceptRequest(
-//        url: String,
-//        requestHeaders: MutableMap<String, String>
-//    ): WebResourceResponse? {
-//
-//        try {
-//
-//
-//            val connection = URL(url).openConnection() as HttpURLConnection
-//            // Удаление заголовка X-Requested-With
-//            val remove = requestHeaders.remove("X-Requested-With")
-//            remove?.let {
-//                Log.d("", "removed")
-//            }
-//            for ((key, value) in requestHeaders) {
-//                connection.setRequestProperty(key, value)
-//            }
-//            val inputStream = connection.inputStream
-//            val mimeType = connection.getHeaderField("Content-Type")
-//            val encoding = connection.contentEncoding
-//            return WebResourceResponse(mimeType, encoding, inputStream)
-//
-//        } catch (ex: Exception) {
-//            Log.e("",ex.localizedMessage)
-//            return null
-//        }
-//    }
 }
