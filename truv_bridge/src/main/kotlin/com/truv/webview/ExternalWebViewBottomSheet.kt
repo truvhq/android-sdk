@@ -1,11 +1,16 @@
 package com.truv.webview
 
+import android.animation.AnimatorInflater
 import android.content.Context
 import android.graphics.Color
 import android.util.Log
 import android.view.View
+import android.view.animation.Animation
+import android.view.animation.AnimationUtils
 import android.webkit.WebView
 import android.widget.FrameLayout
+import android.widget.ImageView
+import android.widget.TextView
 import androidx.annotation.StyleRes
 import androidx.core.view.isVisible
 import com.google.android.material.bottomsheet.BottomSheetBehavior
@@ -32,6 +37,10 @@ class ExternalWebViewBottomSheet(
             field = value
             if (value != null) {
                 findWebView()?.loadUrl(value.url)
+                findRefresher()?.setOnClickListener {
+                    findWebView()?.reload()
+                }
+                findTitle()?.text = value.url
                 startRefreshTimer()
             }
         }
@@ -163,6 +172,8 @@ class ExternalWebViewBottomSheet(
 
     fun findWebView(): WebView? = findViewById(R.id.webview)
     fun findProgressBar(): View? = findViewById(R.id.progress_bar)
+    fun findTitle(): TextView? = findViewById(R.id.title)
+    fun findRefresher(): ImageView? = findViewById(R.id.refresher)
 
     companion object {
         private const val DELAY_MILLIS = 2000L
