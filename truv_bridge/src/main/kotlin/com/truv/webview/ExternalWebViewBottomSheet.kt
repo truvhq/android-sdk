@@ -122,7 +122,9 @@ class ExternalWebViewBottomSheet(
             }
 
             if (bottomSheet != null) {
-                BottomSheetBehavior.from(bottomSheet).state = BottomSheetBehavior.STATE_EXPANDED
+                val bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet)
+                bottomSheetBehavior.isDraggable = false
+                bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
             }
         }
 
