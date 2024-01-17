@@ -2,19 +2,17 @@ package com.truv.webview
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.util.Log
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import java.net.HttpURLConnection
-import java.net.URL
 
 
 class TruvWebViewClient(
     private val context: Context,
     private val eventListeners: Set<TruvEventsListener>,
+    private val onLoading: (Boolean) -> Unit = {},
     private val onLoaded: () -> Unit = {},
 ) : WebViewClient() {
 
@@ -40,6 +38,7 @@ class TruvWebViewClient(
         }
 
         loadingFinished = false;
+        onLoading(true)
         request?.let {
             view?.loadUrl(it.url.toString())
         }
@@ -74,6 +73,7 @@ class TruvWebViewClient(
 
     override fun onPageCommitVisible(view: WebView?, url: String?) {
         super.onPageCommitVisible(view, url)
+        onLoading(false)
         onLoaded()
     }
 

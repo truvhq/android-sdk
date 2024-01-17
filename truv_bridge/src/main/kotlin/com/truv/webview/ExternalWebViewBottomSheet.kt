@@ -4,12 +4,13 @@ import android.content.Context
 import android.graphics.Color
 import android.util.Log
 import android.view.View
-import android.view.ViewGroup
 import android.webkit.WebView
 import android.widget.FrameLayout
 import androidx.annotation.StyleRes
+import androidx.core.view.isVisible
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.truv.R
 import com.truv.models.ExternalLoginConfig
 import com.truv.models.MiddleWareResponseDto
 import com.truv.models.ResponseDto
@@ -30,13 +31,12 @@ class ExternalWebViewBottomSheet(
         set(value) {
             field = value
             if (value != null) {
-                webView.loadUrl(value.url)
+                findWebView()?.loadUrl(value.url)
                 startRefreshTimer()
             }
         }
 
-    private val webView = WebView(context).apply {
-        id = View.generateViewId()
+    private fun initWebView() = with(findWebView()!!) {
         settings.javaScriptEnabled = true
         settings.allowContentAccess = true
         settings.domStorageEnabled = true
@@ -47,6 +47,9 @@ class ExternalWebViewBottomSheet(
                     applyScript(script)
                 }
             }
+        }, onLoading = {
+            findWebView()?.isVisible = !it
+            findProgressBar()?.isVisible = it
         })
         //https://www.whatismybrowser.com/guides/the-latest-user-agent/chrome
         val USER_AGENT =
@@ -75,8 +78,8 @@ class ExternalWebViewBottomSheet(
     private suspend fun applyScript(script: ResponseDto.Payload.Script) {
         withContext(Dispatchers.IO) {
             val scriptText = URL(script.url).readText()
-            webView.handler?.post {
-                webView.evaluateJavascript(scriptText, null)
+            findWebView()?.handler?.post {
+                findWebView()?.evaluateJavascript(scriptText, null)
             }
         }
     }
@@ -84,7 +87,7 @@ class ExternalWebViewBottomSheet(
     private val timerRunnable = Runnable {
         val selector = config?.selector?.replace("\"", "'")
 
-        webView.evaluateJavascript(
+        findWebView()?.evaluateJavascript(
             "          (function() {\n" +
                     "            const getIsElementDisplayed = (element) => {\n" +
                     "              const style = window.getComputedStyle(element);\n" +
@@ -111,34 +114,55 @@ class ExternalWebViewBottomSheet(
     }
 
     private fun startRefreshTimer() {
-        webView.handler?.removeCallbacks(timerRunnable)
-        webView.handler?.postDelayed(timerRunnable, DELAY_MILLIS)
+        findWebView()?.handler?.removeCallbacks(timerRunnable)
+        findWebView()?.handler?.postDelayed(timerRunnable, DELAY_MILLIS)
     }
 
     fun setContentView() {
+        val contentView = layoutInflater.inflate(R.layout.external_webview_bottom_sheet, null)
         this.setOnShowListener { dialog ->
             val bottomSheet = (dialog as? BottomSheetDialog)?.findViewById<FrameLayout>(
                 com.google.android.material.R.id.design_bottom_sheet
-            )?.apply {
-                layoutParams?.height = ViewGroup.LayoutParams.MATCH_PARENT
-                layoutParams?.width = ViewGroup.LayoutParams.MATCH_PARENT
-            }
+            )
 
             if (bottomSheet != null) {
                 val bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet)
-//                bottomSheetBehavior.isDraggable = false
+                val windowHeight =
+                    (contentView.resources.displayMetrics.heightPixels * 0.90).toInt()
+                bottomSheetBehavior.peekHeight = windowHeight
+                contentView.layoutParams.height = windowHeight
+                bottomSheetBehavior.addBottomSheetCallback(object :
+                    BottomSheetBehavior.BottomSheetCallback() {
+                    override fun onStateChanged(bottomSheet: View, newState: Int) {
+                        if (newState == BottomSheetBehavior.STATE_HIDDEN) {
+                            dismiss()
+                        }
+
+                        if (newState != BottomSheetBehavior.STATE_EXPANDED
+                            && newState != BottomSheetBehavior.STATE_DRAGGING
+                            && newState != BottomSheetBehavior.STATE_SETTLING) {
+                            bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
+                        }
+                    }
+
+                    override fun onSlide(bottomSheet: View, slideOffset: Float) {
+
+                    }
+                })
                 bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
             }
         }
-
-        (webView.parent as? ViewGroup)?.removeAllViews()
-        super.setContentView(webView)
+        super.setContentView(contentView)
+        initWebView()
     }
 
     override fun dismiss() {
-        webView.handler?.removeCallbacks(timerRunnable)
+        findWebView()?.handler?.removeCallbacks(timerRunnable)
         super.dismiss()
     }
+
+    fun findWebView(): WebView? = findViewById(R.id.webview)
+    fun findProgressBar(): View? = findViewById(R.id.progress_bar)
 
     companion object {
         private const val DELAY_MILLIS = 2000L
