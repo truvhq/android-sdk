@@ -4,10 +4,6 @@
     <style name="BottomSheetModalHandleInside" parent="Widget.Design.BottomSheet.Modal">
         <item name="android:background">@drawable/shape_rounded_top_bottom_sheet_with_handle_inside</item>
         <item name="android:padding">16dp</item>
-        <item name="android:backgroundDimAmount">0.1</item>
-        <item name="android:windowIsTranslucent">true</item>
-        <item name="android:windowBackground">@android:color/transparent</item>
-        <item name="android:backgroundDimEnabled">true</item>
     </style>
 
     <style name="BottomSheetDialogHandleInside" parent="Theme.Design.Light.BottomSheetDialog">
@@ -15,15 +11,11 @@
         <item name="android:backgroundDimEnabled">true</item>
         <item name="android:windowIsFloating">true</item>
         <item name="android:windowSoftInputMode">adjustResize</item>
-        <item name="android:backgroundDimAmount">0.1</item>
-        <item name="android:windowIsTranslucent">true</item>
-        <item name="android:windowBackground">@android:color/transparent</item>
     </style>
 
     <style name="BottomSheetModalHandleOutside" parent="Widget.Design.BottomSheet.Modal">
         <item name="android:background">@drawable/shape_rounded_top_bottom_sheet_with_handle_outside</item>
         <item name="android:padding">16dp</item>
-        <item name="android:backgroundDimAmount">0.1</item>
     </style>
 
     <style name="BottomSheetDialogHandleOutside" parent="Theme.Design.Light.BottomSheetDialog">
@@ -32,8 +24,5 @@
         <item name="android:windowIsFloating">true</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:windowSoftInputMode">adjustResize</item>
-        <item name="android:backgroundDimAmount">0.1</item>
-        <item name="android:windowIsTranslucent">true</item>
-        <item name="android:windowBackground">@android:color/transparent</item>
     </style>
 </resources>
