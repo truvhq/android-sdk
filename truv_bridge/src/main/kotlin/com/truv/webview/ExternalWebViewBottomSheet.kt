@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.webkit.WebView
 import android.widget.FrameLayout
+import androidx.annotation.StyleRes
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.truv.models.ExternalLoginConfig
@@ -21,8 +22,9 @@ import java.net.URL
 
 class ExternalWebViewBottomSheet(
     context: Context,
+    @StyleRes styleRes: Int,
     private val eventListeners: Set<TruvEventsListener>
-) : BottomSheetDialog(context) {
+) : BottomSheetDialog(context, styleRes) {
 
     var config: ExternalLoginConfig? = null
         set(value) {
@@ -47,7 +49,8 @@ class ExternalWebViewBottomSheet(
             }
         })
         //https://www.whatismybrowser.com/guides/the-latest-user-agent/chrome
-        val USER_AGENT = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.210 Mobile Safari/537.36"
+        val USER_AGENT =
+            "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.210 Mobile Safari/537.36"
         settings.userAgentString = USER_AGENT;
         addJavascriptInterface(WebAppInterface(eventListeners), Constants.CITADEL_INTERFACE)
         addJavascriptInterface(MiddleWareInterface {
@@ -56,7 +59,7 @@ class ExternalWebViewBottomSheet(
         }, "callbackInterface")
     }
 
-    private fun performRequest(responseString : String) {
+    private fun performRequest(responseString: String) {
         HttpRequest(
             headers = mapOf(
                 "Content-Type" to config?.script?.callbackHeaders?.contentType.orEmpty(),
@@ -123,7 +126,7 @@ class ExternalWebViewBottomSheet(
 
             if (bottomSheet != null) {
                 val bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet)
-                bottomSheetBehavior.isDraggable = false
+//                bottomSheetBehavior.isDraggable = false
                 bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
             }
         }

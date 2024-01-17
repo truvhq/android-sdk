@@ -8,6 +8,7 @@ import android.view.View
 import android.webkit.WebView
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import com.truv.BuildConfig
+import com.truv.R
 import com.truv.models.ExternalLoginConfig
 import com.truv.models.TruvEventPayload
 import com.truv.models.TruvSuccessPayload
@@ -66,7 +67,7 @@ class TruvBridgeView @JvmOverloads constructor(
     }
 
     private val bottomSheetWebView: ExternalWebViewBottomSheet by lazy {
-        ExternalWebViewBottomSheet(context, setOf(bottomSheetEventListener)).apply {
+        ExternalWebViewBottomSheet(context, R.style.BottomSheetDialogHandleOutside, setOf(bottomSheetEventListener)).apply {
             setOnDismissListener {
                 webView.evaluateJavascript(Constants.SCRIPT_EXTERNAL_LOGIN_CANCEL) { result ->
                     Log.d(TAG, "On External closed: $result")
