@@ -1,12 +1,9 @@
 package com.truv.webview
 
-import android.animation.AnimatorInflater
 import android.content.Context
 import android.graphics.Color
 import android.util.Log
 import android.view.View
-import android.view.animation.Animation
-import android.view.animation.AnimationUtils
 import android.webkit.WebView
 import android.widget.FrameLayout
 import android.widget.ImageView
@@ -149,7 +146,8 @@ class ExternalWebViewBottomSheet(
 
                         if (newState != BottomSheetBehavior.STATE_EXPANDED
                             && newState != BottomSheetBehavior.STATE_DRAGGING
-                            && newState != BottomSheetBehavior.STATE_SETTLING) {
+                            && newState != BottomSheetBehavior.STATE_SETTLING
+                        ) {
                             bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
                         }
                     }

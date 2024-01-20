@@ -37,7 +37,7 @@
         android:layout_alignParentRight="true"
         android:layout_alignParentTop="true"
         android:paddingTop="16dp"
-        android:paddingRight="16dp"
+        android:translationX="8dp"
         android:src="@drawable/icons8_refresh">
     </ImageView>
 
