@@ -3,7 +3,6 @@
     <!-- Bottom Sheet -->
     <style name="BottomSheetModalHandleInside" parent="Widget.Design.BottomSheet.Modal">
         <item name="android:background">@drawable/shape_rounded_top_bottom_sheet_with_handle_inside</item>
-        <item name="android:padding">16dp</item>
     </style>
 
     <style name="BottomSheetDialogHandleInside" parent="Theme.Design.Light.BottomSheetDialog">
@@ -15,7 +14,6 @@
 
     <style name="BottomSheetModalHandleOutside" parent="Widget.Design.BottomSheet.Modal">
         <item name="android:background">@drawable/shape_rounded_top_bottom_sheet_with_handle_outside</item>
-        <item name="android:padding">16dp</item>
     </style>
 
     <style name="BottomSheetDialogHandleOutside" parent="Theme.Design.Light.BottomSheetDialog">
