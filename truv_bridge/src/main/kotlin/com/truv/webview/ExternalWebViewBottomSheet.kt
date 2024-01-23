@@ -48,11 +48,12 @@ class ExternalWebViewBottomSheet(
         settings.domStorageEnabled = true
         setBackgroundColor(Color.WHITE)
         webViewClient = TruvWebViewClient(context, eventListeners, onLoaded = {
-            config?.script?.let { script ->
-                runBlocking {
-                    applyScript(script)
-                }
-            }
+//            TODO: uncomment when script will be ready
+//            config?.script?.let { script ->
+//                runBlocking {
+//                    applyScript(script)
+//                }
+//            }
         }, onLoading = {
             findWebView()?.isVisible = !it
             findProgressBar()?.isVisible = it
