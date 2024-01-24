@@ -23,23 +23,6 @@ class TruvBridgeView @JvmOverloads constructor(
 
     private val eventListeners = mutableSetOf<TruvEventsListener>()
 
-    private val internalEventListener = object : TruvEventsListener {
-        override fun onSuccess(payload: TruvSuccessPayload) {}
-
-        override fun onClose() {}
-
-        override fun onLoad() {}
-
-        override fun onError() {}
-
-        override fun onEvent(event: TruvEventPayload) {
-            if (event.eventType == TruvEventPayload.EventType.LOGIN_COMPLETE) {
-                externalWebViewBottomSheet.dismiss()
-            }
-        }
-    }
-
-
     private val bottomSheetEventListener: TruvEventsListener by lazy {
         object : TruvEventsListener {
 
@@ -91,6 +74,7 @@ class TruvBridgeView @JvmOverloads constructor(
             eventListeners = setOf(bottomSheetEventListener),
             onCookie = { cookies, pageUrl ->
                 sendCookies(cookies, pageUrl)
+                externalWebViewBottomSheet.dismiss()
             }).apply {
             setOnDismissListener {
                 webView.evaluateJavascript(Constants.SCRIPT_EXTERNAL_LOGIN_CANCEL) { result ->
@@ -127,7 +111,6 @@ class TruvBridgeView @JvmOverloads constructor(
         settings.javaScriptEnabled = true
         settings.allowContentAccess = true
         settings.domStorageEnabled = true
-        addEventListener(internalEventListener)
         webViewClient = TruvWebViewClient(context, eventListeners)
         addJavascriptInterface(WebAppInterface(eventListeners) {
             Log.d("TruvBridgeView", "Open external login")
