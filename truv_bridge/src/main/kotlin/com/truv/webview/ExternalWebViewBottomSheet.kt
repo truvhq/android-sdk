@@ -2,8 +2,10 @@ package com.truv.webview
 
 import android.content.Context
 import android.graphics.Color
+import android.os.CountDownTimer
 import android.util.Log
 import android.view.View
+import android.webkit.CookieManager
 import android.webkit.WebView
 import android.widget.FrameLayout
 import android.widget.ImageView
@@ -17,8 +19,8 @@ import com.truv.models.ExternalLoginConfig
 import com.truv.models.MiddleWareResponseDto
 import com.truv.models.ResponseDto
 import com.truv.network.HttpRequest
+import com.truv.webview.models.Cookie
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.net.URL
@@ -26,7 +28,8 @@ import java.net.URL
 class ExternalWebViewBottomSheet(
     context: Context,
     @StyleRes styleRes: Int,
-    private val eventListeners: Set<TruvEventsListener>
+    private val eventListeners: Set<TruvEventsListener>,
+    private val onCookie: (cookies: List<Cookie>, pageUrl: String) -> Unit,
 ) : BottomSheetDialog(context, styleRes) {
 
     var config: ExternalLoginConfig? = null
@@ -67,6 +70,8 @@ class ExternalWebViewBottomSheet(
             val responseDto = MiddleWareResponseDto.parse(JSONObject(it))
             performRequest(it)
         }, "callbackInterface")
+
+        cookiesUpdateTimer.start()
     }
 
     private fun performRequest(responseString: String) {
@@ -164,8 +169,60 @@ class ExternalWebViewBottomSheet(
         initWebView()
     }
 
+
+    private val cookiesUpdateTimer = object : CountDownTimer(Long.MAX_VALUE, 1000) {
+        val seenURLs = mutableSetOf<String>()
+        override fun onTick(millisUntilFinished: Long) {
+            findWebView()?.evaluateJavascript(getSelectorScript()) {
+                Log.d("ProviderWebView", "WebView evaluate status: $it")
+                if (it == "false") {
+                    return@evaluateJavascript
+                }
+
+                Log.d("ProviderWebView", "Collecting cookies from seen urls: ${seenURLs.joinToString(", ")}")
+
+                val dashboardUrl = findWebView()?.url
+
+                val allCookies = seenURLs.fold(listOf<Cookie>()) { acc, url ->
+                    val cookies = CookieManager.getInstance().getCookie(url) ?: return@fold acc
+                    val cookieStrings = cookies.split(";".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+                    val domain = URL(url).host
+                    val topLevelDomain = "." + domain.split(".").dropLastWhile { it.isEmpty() }.takeLast(2).joinToString(".")
+
+                    val list = cookieStrings.map {
+                        val split = it.split("=".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+
+                        return@map Cookie(
+                            name = split[0].trim(),
+                            value = split[1],
+                            domain = topLevelDomain,
+                            path = "/",
+                            secure = false,
+                            httpOnly = false,
+                        )
+                    }
+
+                    return@fold acc.plus(list)
+                }
+
+                Log.d("ProviderWebView", "All cookies: $allCookies")
+
+                onCookie(allCookies, dashboardUrl ?: "")
+                this.cancel()
+            }
+        }
+
+        override fun onFinish() {
+
+        }
+    }
+
+    fun getSelectorScript(): String {
+       return "window.document.evaluate(\"${config?.selector}\", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue != null"
+    }
     override fun dismiss() {
         findWebView()?.handler?.removeCallbacks(timerRunnable)
+        cookiesUpdateTimer.cancel()
         super.dismiss()
     }
 

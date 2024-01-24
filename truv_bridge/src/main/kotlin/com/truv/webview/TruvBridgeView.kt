@@ -12,6 +12,7 @@ import com.truv.R
 import com.truv.models.ExternalLoginConfig
 import com.truv.models.TruvEventPayload
 import com.truv.models.TruvSuccessPayload
+import com.truv.webview.models.Cookie
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -67,12 +68,40 @@ class TruvBridgeView @JvmOverloads constructor(
     }
 
     private val bottomSheetWebView: ExternalWebViewBottomSheet by lazy {
-        ExternalWebViewBottomSheet(context, R.style.BottomSheetDialogHandleOutside, setOf(bottomSheetEventListener)).apply {
+        ExternalWebViewBottomSheet(
+            context = context,
+            styleRes = R.style.BottomSheetDialogHandleOutside,
+            eventListeners = setOf(bottomSheetEventListener),
+            onCookie = { cookies, pageUrl ->
+                sendCookies(cookies, pageUrl)
+            }).apply {
             setOnDismissListener {
                 webView.evaluateJavascript(Constants.SCRIPT_EXTERNAL_LOGIN_CANCEL) { result ->
                     Log.d(TAG, "On External closed: $result")
                 }
             }
+        }
+    }
+
+    private fun sendCookies(
+        cookies: List<Cookie>,
+        pageUrl: String
+    ) {
+        val data = JSONObject().apply {
+            put("cookies", JSONArray().apply {
+                cookies.forEach {
+                    put(it.toJson())
+                }
+            })
+            put("dashboard_url", pageUrl)
+        }
+        webView.evaluateJavascript(
+            String.format(
+                Constants.SCRIPT_EXTERNAL_LOGIN_SUCCESS,
+                data.toString()
+            )
+        ) { result ->
+            Log.d(TAG, "On External cookie: $result")
         }
     }
 

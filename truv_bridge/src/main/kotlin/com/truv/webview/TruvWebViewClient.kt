@@ -58,19 +58,6 @@ class TruvWebViewClient(
         loadingFinished = false;
     }
 
-//    override fun onPageFinished(view: WebView?, url: String?) {
-//        super.onPageFinished(view, url)
-//        if (!redirect) {
-//            loadingFinished = true;
-//        }
-//        if (loadingFinished && !redirect) {
-//            onLoaded()
-//        } else {
-//            redirect = false;
-//        }
-//
-//    }
-
     override fun onPageCommitVisible(view: WebView?, url: String?) {
         super.onPageCommitVisible(view, url)
         onLoading(false)
