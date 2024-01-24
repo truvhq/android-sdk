@@ -45,12 +45,8 @@ class ExternalWebViewBottomSheet(
             }
         }
 
-    private fun initWebView() = with(findWebView()!!) {
-        settings.javaScriptEnabled = true
-        settings.allowContentAccess = true
-        settings.domStorageEnabled = true
-        setBackgroundColor(Color.WHITE)
-        webViewClient = TruvWebViewClient(context, eventListeners, onLoaded = {
+    val truvWebViewClient by lazy {
+        TruvWebViewClient(context, eventListeners, onLoaded = {
 //            TODO: uncomment when script will be ready
 //            config?.script?.let { script ->
 //                runBlocking {
@@ -61,6 +57,13 @@ class ExternalWebViewBottomSheet(
             findWebView()?.isVisible = !it
             findProgressBar()?.isVisible = it
         })
+    }
+    private fun initWebView() = with(findWebView()!!) {
+        settings.javaScriptEnabled = true
+        settings.allowContentAccess = true
+        settings.domStorageEnabled = true
+        setBackgroundColor(Color.WHITE)
+        webViewClient = truvWebViewClient
         //https://www.whatismybrowser.com/guides/the-latest-user-agent/chrome
         val USER_AGENT =
             "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.210 Mobile Safari/537.36"
@@ -171,14 +174,14 @@ class ExternalWebViewBottomSheet(
 
 
     private val cookiesUpdateTimer = object : CountDownTimer(Long.MAX_VALUE, 1000) {
-        val seenURLs = mutableSetOf<String>()
+
         override fun onTick(millisUntilFinished: Long) {
             findWebView()?.evaluateJavascript(getSelectorScript()) {
                 Log.d("ProviderWebView", "WebView evaluate status: $it")
                 if (it == "false") {
                     return@evaluateJavascript
                 }
-
+                val seenURLs = truvWebViewClient.getSeenPages()
                 Log.d("ProviderWebView", "Collecting cookies from seen urls: ${seenURLs.joinToString(", ")}")
 
                 val dashboardUrl = findWebView()?.url
