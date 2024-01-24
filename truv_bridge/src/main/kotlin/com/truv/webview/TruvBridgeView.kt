@@ -27,7 +27,7 @@ class TruvBridgeView @JvmOverloads constructor(
         object : TruvEventsListener {
 
             override fun onSuccess(payload: TruvSuccessPayload) {
-                bottomSheetWebView.dismiss()
+                externalWebViewBottomSheet.dismiss()
 
                 val dataWithTags = JSONObject(payload.json)
                 val tags = JSONArray().apply {
@@ -46,6 +46,8 @@ class TruvBridgeView @JvmOverloads constructor(
                 ) { result ->
                     Log.d(TAG, "On External success: $result")
                 }
+
+                externalWebViewBottomSheet.dismiss()
             }
 
             override fun onEvent(event: TruvEventPayload) {
@@ -67,7 +69,7 @@ class TruvBridgeView @JvmOverloads constructor(
         }
     }
 
-    private val bottomSheetWebView: ExternalWebViewBottomSheet by lazy {
+    private val externalWebViewBottomSheet: ExternalWebViewBottomSheet by lazy {
         ExternalWebViewBottomSheet(
             context = context,
             styleRes = R.style.BottomSheetDialogHandleOutside,
@@ -132,9 +134,9 @@ class TruvBridgeView @JvmOverloads constructor(
 
     private fun showExternalWebView(config: ExternalLoginConfig) {
         post {
-            bottomSheetWebView.setContentView()
-            bottomSheetWebView.show()
-            bottomSheetWebView.config = config
+            externalWebViewBottomSheet.setContentView()
+            externalWebViewBottomSheet.show()
+            externalWebViewBottomSheet.config = config
         }
     }
 
