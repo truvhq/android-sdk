@@ -6,7 +6,8 @@ import kotlin.jvm.Throws
 
 data class TruvSuccessPayload(
     val publicToken: String,
-    val metadata: Metadata
+    val metadata: Metadata,
+    val json: String
 ) {
 
     class Metadata(
@@ -29,7 +30,7 @@ data class TruvSuccessPayload(
 
             val metadata = Metadata(taskId, TruvEmployer(employerName))
 
-            return TruvSuccessPayload(publicToken, metadata)
+            return TruvSuccessPayload(publicToken, metadata, json)
         }
 
     }
