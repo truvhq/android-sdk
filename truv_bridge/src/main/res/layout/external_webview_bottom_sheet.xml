@@ -41,13 +41,12 @@
         android:src="@drawable/icons8_refresh">
     </ImageView>
 
-    <ImageView
+    <ProgressBar
         android:id="@+id/progress_bar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerInParent="true"
-        android:src="@drawable/spinner" />
-
+        android:indeterminateDrawable="@anim/animation" />
 
     <WebView
         android:id="@+id/webview"

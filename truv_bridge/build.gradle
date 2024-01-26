@@ -1,17 +1,30 @@
 plugins {
     id 'com.android.library'
     id 'org.jetbrains.kotlin.android'
+    id 'org.jetbrains.kotlin.plugin.serialization' version '1.9.10'
 }
 
 android {
     namespace = "com.truv"
     compileSdk 34
-
+    def versionNameString = "\"1.4.0\""
     defaultConfig {
         minSdk 21
         targetSdk 34
         versionCode 2
-        versionName "1.4.0"
+        versionName versionNameString
+
+        buildTypes {
+            debug {
+                buildConfigField "String", "VERSION_NAME", versionName
+                minifyEnabled false
+            }
+            release {
+                buildConfigField "String", "VERSION_NAME", versionName
+                minifyEnabled false
+                proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            }
+        }
     }
 
     compileOptions {
@@ -25,6 +38,8 @@ android {
 
     dependencies {
         implementation 'com.google.android.material:material:1.10.0'
+        implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3"
+        implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2"
     }
 
 }

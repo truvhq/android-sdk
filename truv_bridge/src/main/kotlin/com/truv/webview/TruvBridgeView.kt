@@ -7,9 +7,12 @@ import android.view.KeyEvent
 import android.view.View
 import android.webkit.WebView
 import androidx.coordinatorlayout.widget.CoordinatorLayout
+import com.truv.BuildConfig
+import com.truv.R
 import com.truv.models.ExternalLoginConfig
 import com.truv.models.TruvEventPayload
 import com.truv.models.TruvSuccessPayload
+import com.truv.webview.models.Cookie
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -24,14 +27,12 @@ class TruvBridgeView @JvmOverloads constructor(
         object : TruvEventsListener {
 
             override fun onSuccess(payload: TruvSuccessPayload) {
-                bottomSheetWebView.dismiss()
+                externalWebViewBottomSheet.dismiss()
 
-                val dataWithTags = JSONObject(payload.raw)
-
+                val dataWithTags = JSONObject(payload.json)
                 val tags = JSONArray().apply {
                     put("platform:android")
-                    // TODO: CHANGE TO SDK VERSION
-                    put("sdk-version:1.4.0")
+                    put("sdk-version:${BuildConfig.VERSION_NAME}")
                     put("source:android-sdk")
                 }
 
@@ -66,13 +67,42 @@ class TruvBridgeView @JvmOverloads constructor(
         }
     }
 
-    private val bottomSheetWebView: ExternalWebViewBottomSheet by lazy {
-        ExternalWebViewBottomSheet(context, setOf(bottomSheetEventListener)).apply {
+    private val externalWebViewBottomSheet: ExternalWebViewBottomSheet by lazy {
+        ExternalWebViewBottomSheet(
+            context = context,
+            styleRes = R.style.BottomSheetDialogHandleOutside,
+            eventListeners = setOf(bottomSheetEventListener),
+            onCookie = { cookies, pageUrl ->
+                sendCookies(cookies, pageUrl)
+                externalWebViewBottomSheet.dismiss()
+            }).apply {
             setOnDismissListener {
                 webView.evaluateJavascript(Constants.SCRIPT_EXTERNAL_LOGIN_CANCEL) { result ->
                     Log.d(TAG, "On External closed: $result")
                 }
             }
+        }
+    }
+
+    private fun sendCookies(
+        cookies: List<Cookie>,
+        pageUrl: String
+    ) {
+        val data = JSONObject().apply {
+            put("cookies", JSONArray().apply {
+                cookies.forEach {
+                    put(it.toJson())
+                }
+            })
+            put("dashboard_url", pageUrl)
+        }
+        webView.evaluateJavascript(
+            String.format(
+                Constants.SCRIPT_EXTERNAL_LOGIN_SUCCESS,
+                data.toString()
+            )
+        ) { result ->
+            Log.d(TAG, "On External cookie: $result")
         }
     }
 
@@ -103,9 +133,9 @@ class TruvBridgeView @JvmOverloads constructor(
 
     private fun showExternalWebView(config: ExternalLoginConfig) {
         post {
-            bottomSheetWebView.setContentView()
-            bottomSheetWebView.show()
-            bottomSheetWebView.config = config
+            externalWebViewBottomSheet.setContentView()
+            externalWebViewBottomSheet.show()
+            externalWebViewBottomSheet.config = config
         }
     }
 
