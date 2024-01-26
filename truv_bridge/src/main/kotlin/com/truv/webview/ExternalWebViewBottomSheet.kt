@@ -192,9 +192,10 @@ class ExternalWebViewBottomSheet(
                     val domain = URL(url).host
                     val topLevelDomain = "." + domain.split(".").dropLastWhile { it.isEmpty() }.takeLast(2).joinToString(".")
 
-                    val list = cookieStrings.map {
-                        val split = it.split("=".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-
+                    val list = cookieStrings
+                        .map { it.split("=".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray() }
+                        .filter { it.size == 2 }
+                        .map { split ->
                         return@map Cookie(
                             name = split[0].trim(),
                             value = split[1],
