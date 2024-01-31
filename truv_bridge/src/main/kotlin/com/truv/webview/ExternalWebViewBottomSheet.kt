@@ -5,6 +5,7 @@ import android.graphics.Color
 import android.os.CountDownTimer
 import android.util.Log
 import android.view.View
+import android.view.animation.AnimationUtils
 import android.webkit.CookieManager
 import android.webkit.WebView
 import android.widget.FrameLayout
@@ -58,6 +59,13 @@ class ExternalWebViewBottomSheet(
             findProgressBar()?.isVisible = it
         })
     }
+
+    private fun startProgressAnimation(context: Context) {
+        val rotation = AnimationUtils.loadAnimation(context, R.anim.rotate)
+        rotation.fillAfter = true
+        findProgressBar()?.startAnimation(rotation)
+    }
+
     private fun initWebView() = with(findWebView()!!) {
         settings.javaScriptEnabled = true
         settings.allowContentAccess = true
@@ -170,6 +178,7 @@ class ExternalWebViewBottomSheet(
         }
         super.setContentView(contentView)
         initWebView()
+        startProgressAnimation(contentView.context)
     }
 
 
