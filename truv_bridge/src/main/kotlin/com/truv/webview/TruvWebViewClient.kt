@@ -1,7 +1,6 @@
 package com.truv.webview
 
 import android.content.Context
-import android.graphics.Bitmap
 import android.util.Log
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
@@ -15,10 +14,9 @@ class TruvWebViewClient(
     private val eventListeners: Set<TruvEventsListener>,
     private val onLoading: (Boolean) -> Unit = {},
     private val onLoaded: () -> Unit = {},
+    private val openExternalLinkInAppBrowser:((String) -> Unit)? = null ,
 ) : WebViewClient() {
     private val seenURLs = mutableSetOf<String>()
-    private var loadingFinished = true
-    private var redirect = false
 
     override fun shouldInterceptRequest(
         view: WebView?,
@@ -34,15 +32,11 @@ class TruvWebViewClient(
         view: WebView?,
         request: WebResourceRequest?
     ): Boolean {
-        if (!loadingFinished) {
-            redirect = true;
-        }
-
-        loadingFinished = false
-
+        Log.d("TruvWebViewClient", "URL: ${request?.url}")
         onLoading(true)
         request?.let {
             view?.loadUrl(it.url.toString())
+            openExternalLinkInAppBrowser?.invoke(it.url.toString())
         }
 
         seenURLs.add(request?.url.toString())
@@ -55,11 +49,6 @@ class TruvWebViewClient(
         error: WebResourceError?
     ) {
         eventListeners.forEach { it.onClose() }
-    }
-
-    override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
-        super.onPageStarted(view, url, favicon)
-        loadingFinished = false;
     }
 
     override fun onPageCommitVisible(view: WebView?, url: String?) {
