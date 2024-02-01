@@ -35,7 +35,6 @@ class TruvWebViewClient(
         Log.d("TruvWebViewClient", "URL: ${request?.url}")
         onLoading(true)
         request?.let {
-            view?.loadUrl(it.url.toString())
             openExternalLinkInAppBrowser?.invoke(it.url.toString())
         }
 
