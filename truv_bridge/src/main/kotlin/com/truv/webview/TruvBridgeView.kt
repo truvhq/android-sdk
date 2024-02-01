@@ -1,11 +1,13 @@
 package com.truv.webview
 
 import android.content.Context
+import android.net.Uri
 import android.util.AttributeSet
 import android.util.Log
 import android.view.KeyEvent
 import android.view.View
 import android.webkit.WebView
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import com.truv.BuildConfig
 import com.truv.R
@@ -111,7 +113,9 @@ class TruvBridgeView @JvmOverloads constructor(
         settings.javaScriptEnabled = true
         settings.allowContentAccess = true
         settings.domStorageEnabled = true
-        webViewClient = TruvWebViewClient(context, eventListeners)
+        webViewClient = TruvWebViewClient(context, eventListeners, openExternalLinkInAppBrowser = {url ->
+            showExternalBrowser(url)
+        })
         addJavascriptInterface(WebAppInterface(eventListeners) {
             Log.d("TruvBridgeView", "Open external login")
             showExternalWebView(config = it)
@@ -125,6 +129,12 @@ class TruvBridgeView @JvmOverloads constructor(
             }
             return@setOnKeyListener super.onKeyDown(keyCode, keyEvent)
         }
+    }
+
+    private fun showExternalBrowser(url: String) {
+        val intent: CustomTabsIntent = CustomTabsIntent.Builder()
+            .build()
+        intent.launchUrl(this@TruvBridgeView.context, Uri.parse(url))
     }
 
     init {
