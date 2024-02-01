@@ -154,6 +154,7 @@ class ExternalWebViewBottomSheet(
                     (contentView.resources.displayMetrics.heightPixels * 0.90).toInt()
                 bottomSheetBehavior.peekHeight = windowHeight
                 contentView.layoutParams.height = windowHeight
+                bottomSheetBehavior.maxHeight = windowHeight
                 bottomSheetBehavior.addBottomSheetCallback(object :
                     BottomSheetBehavior.BottomSheetCallback() {
                     override fun onStateChanged(bottomSheet: View, newState: Int) {
