@@ -14,7 +14,7 @@ class TruvWebViewClient(
     private val eventListeners: Set<TruvEventsListener>,
     private val onLoading: (Boolean) -> Unit = {},
     private val onLoaded: () -> Unit = {},
-    private val openExternalLinkInAppBrowser:((String) -> Unit)? = null ,
+    private val openExternalLinkInAppBrowser: ((String) -> Unit)? = null,
 ) : WebViewClient() {
     private val seenURLs = mutableSetOf<String>()
 
@@ -35,7 +35,9 @@ class TruvWebViewClient(
         Log.d("TruvWebViewClient", "URL: ${request?.url}")
         onLoading(true)
         request?.let {
-            openExternalLinkInAppBrowser?.invoke(it.url.toString())
+            openExternalLinkInAppBrowser?.invoke(it.url.toString()) ?: run {
+                view?.loadUrl(it.url.toString())
+            }
         }
 
         seenURLs.add(request?.url.toString())
