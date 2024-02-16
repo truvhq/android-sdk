@@ -4,7 +4,6 @@ import org.json.JSONObject
 
 data class ResponseDto(
     val eventType: String?,
-    val error: Error?,
     val payload: Payload?
 ) {
     data class Error(
@@ -15,9 +14,9 @@ data class ResponseDto(
         companion object {
             fun parse(json: JSONObject): Error {
                 return Error(
-                    type = json.optString("type"),
-                    code = json.optString("code"),
-                    message = json.optString("message")
+                    type = json.optString("error_type"),
+                    code = json.optString("error_code"),
+                    message = json.optString("error_message")
                 )
             }
         }
@@ -35,6 +34,7 @@ data class ResponseDto(
         val publicToken: String?,
         val viewName: String?,
         val employer: Employer?,
+        val error: Error?,
     ) {
         data class Employer(
             val name: String?
@@ -87,7 +87,7 @@ data class ResponseDto(
                             ?.let { CallbackHeaders.parse(it) },
                         callbackMethod = json.optString("callback_method"),
                         callbackUrl = json.optString("callback_url"),
-                        url = json.optString("url")
+                        url = json.optString("url"),
                     )
                 }
 
@@ -107,6 +107,7 @@ data class ResponseDto(
                     productType = json.optString("product_type"),
                     publicToken = json.optString("public_token"),
                     viewName = json.optString("view_name"),
+                    error = json.optJSONObject("error")?.let { Error.parse(it) },
                     employer = json.optJSONObject("employer")?.let { Employer.parse(it) },
                 )
             }
@@ -117,8 +118,7 @@ data class ResponseDto(
         fun parse(json: JSONObject): ResponseDto {
             return ResponseDto(
                 eventType = json.optString("event_type"),
-                error = json.optJSONObject("error")?.let { ResponseDto.Error.parse(it) },
-                payload = json.optJSONObject("payload")?.let { ResponseDto.Payload.parse(it) },
+                payload = json.optJSONObject("payload")?.let { Payload.parse(it) },
             )
         }
     }
