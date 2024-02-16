@@ -50,7 +50,7 @@ data class TruvEventPayload(
                         )
                     } else null
 
-                val error = error?.let {
+                val error = payload?.error?.let {
                     TruvError(
                         type = it.type!!,
                         code = TruvError.ErrorCode.valueOf(it.code!!),
