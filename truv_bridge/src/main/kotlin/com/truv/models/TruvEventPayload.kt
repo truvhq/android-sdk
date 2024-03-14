@@ -7,7 +7,12 @@ data class TruvEventPayload(
     val payload: Payload?,
     val eventType: EventType
 ) {
-
+    fun toJson(): String {
+        return JSONObject().apply {
+            put("eventType", eventType.event)
+            put("payload", payload?.toJson())
+        }.toString()
+    }
     data class Payload(
         val bridgeToken: String?,
         val productType: String?,
@@ -18,9 +23,23 @@ data class TruvEventPayload(
         val providerId: String?,
         val error: TruvError?,
         val externalLoginConfig: ExternalLoginConfig?
-    )
+    ){
+        fun toJson(): JSONObject {
+            return JSONObject().apply {
+                put("bridgeToken", bridgeToken)
+                put("productType", productType)
+                put("viewName", viewName)
+                put("employer", employer?.toJson())
+                put("publicToken", publicToken)
+                put("taskId", taskId)
+                put("providerId", providerId)
+                put("error", error?.toJson())
+                put("externalLoginConfig", externalLoginConfig?.toJson())
+            }
+        }
+    }
 
-    enum class EventType(event: String) {
+    enum class EventType(val event: String) {
         LOAD("LOAD"),
         OPEN("OPEN"),
         SCREEN_VIEW("SCREEN_VIEW"),
