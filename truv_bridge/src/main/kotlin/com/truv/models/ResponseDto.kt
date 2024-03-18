@@ -66,10 +66,24 @@ data class ResponseDto(
             val callbackUrl: String?,
             val url: String?
         ) {
+            fun toJson(): JSONObject {
+                return JSONObject().apply {
+                    put("callback_headers", callbackHeaders?.toJson())
+                    put("callback_method", callbackMethod)
+                    put("callback_url", callbackUrl)
+                    put("url", url)
+                }
+            }
             data class CallbackHeaders(
                 val contentType: String?,
                 val xAccessToken: String?
             ) {
+                fun toJson(): JSONObject {
+                    return JSONObject().apply {
+                        put("Content-Type", contentType)
+                        put("X-Access-Token", xAccessToken)
+                    }
+                }
                 companion object {
                     fun parse(json: JSONObject): CallbackHeaders {
                         return CallbackHeaders(
