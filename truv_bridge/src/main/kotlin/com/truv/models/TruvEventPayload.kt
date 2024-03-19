@@ -9,7 +9,7 @@ data class TruvEventPayload(
 ) {
     fun toJson(): String {
         return JSONObject().apply {
-            put("eventType", eventType.event)
+            put("eventType", eventType.toJson())
             put("payload", payload?.toJson())
         }.toString()
     }
@@ -51,6 +51,12 @@ data class TruvEventPayload(
         UNSUPPORTED_BROWSER("UNSUPPORTED_BROWSER"),
         START_EXTERNAL_LOGIN("START_EXTERNAL_LOGIN"),
         CLOSE("CLOSE")
+    }
+
+    private fun EventType.toJson(): JSONObject {
+        return JSONObject().apply {
+            put("event", event)
+        }
     }
 
     companion object {
