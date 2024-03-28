@@ -44,14 +44,6 @@ class TruvWebViewClient(
         return true
     }
 
-    override fun onReceivedError(
-        view: WebView?,
-        request: WebResourceRequest?,
-        error: WebResourceError?
-    ) {
-        eventListeners.forEach { it.onClose() }
-    }
-
     override fun onPageCommitVisible(view: WebView?, url: String?) {
         super.onPageCommitVisible(view, url)
         onLoading(false)
