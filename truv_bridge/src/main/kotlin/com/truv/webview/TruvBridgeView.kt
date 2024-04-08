@@ -1,14 +1,19 @@
 package com.truv.webview
 
+import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.util.AttributeSet
 import android.util.Log
 import android.view.KeyEvent
 import android.view.View
+import android.webkit.ValueCallback
+import android.webkit.WebChromeClient
 import android.webkit.WebView
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.coordinatorlayout.widget.CoordinatorLayout
+import androidx.core.app.ActivityCompat.startActivityForResult
 import com.truv.BuildConfig
 import com.truv.R
 import com.truv.models.ExternalLoginConfig
@@ -20,9 +25,11 @@ import org.json.JSONObject
 
 class TruvBridgeView @JvmOverloads constructor(
     context: Context,
-    attrs: AttributeSet? = null
+    attrs: AttributeSet? = null,
 ) : CoordinatorLayout(context, attrs) {
 
+    private val CHOOSE_FILE_REQUEST_CODE = 101
+    private var filePathCallback: ValueCallback<Array<Uri>>? = null
     private val eventListeners = mutableSetOf<TruvEventsListener>()
 
     private val bottomSheetEventListener: TruvEventsListener by lazy {
@@ -116,10 +123,23 @@ class TruvBridgeView @JvmOverloads constructor(
         webViewClient = TruvWebViewClient(context, eventListeners, openExternalLinkInAppBrowser = {url ->
             showExternalBrowser(url)
         })
-        addJavascriptInterface(WebAppInterface(eventListeners) {
-            Log.d("TruvBridgeView", "Open external login")
-            showExternalWebView(config = it)
-        }, Constants.CITADEL_INTERFACE)
+        webChromeClient = object: WebChromeClient() {
+            override fun onShowFileChooser(webView: WebView, filePathCallback: ValueCallback<Array<Uri>>?, fileChooserParams: FileChooserParams?): Boolean {
+                (context as? Activity)?.startActivityForResult(fileChooserParams?.createIntent(), CHOOSE_FILE_REQUEST_CODE)
+                this@TruvBridgeView.filePathCallback = filePathCallback
+                return true
+            }
+        }
+        addJavascriptInterface(WebAppInterface(
+            eventListeners = eventListeners,
+            onShowExternalWebViewForLogin = {
+                Log.d("TruvBridgeView", "Open external login")
+                showExternalWebView(config = it)
+            },
+            onShowExternalWebView = {
+                showExternalWebView(it)
+            },
+        ), Constants.CITADEL_INTERFACE)
         setOnKeyListener { _, keyCode, keyEvent ->
             if (keyEvent.action == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_BACK) {
                 evaluateJavascript(Constants.SCRIPT_BACK_PRESS) {
@@ -128,6 +148,17 @@ class TruvBridgeView @JvmOverloads constructor(
                 return@setOnKeyListener true
             }
             return@setOnKeyListener super.onKeyDown(keyCode, keyEvent)
+        }
+    }
+
+    fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        when (requestCode) {
+            CHOOSE_FILE_REQUEST_CODE -> {
+                if (resultCode == Activity.RESULT_OK) {
+                    filePathCallback?.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, data))
+                    filePathCallback = null
+                }
+            }
         }
     }
 
@@ -141,11 +172,26 @@ class TruvBridgeView @JvmOverloads constructor(
         addView(webView, LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
     }
 
+    private fun showExternalWebView(url: String) {
+        post {
+            externalWebViewBottomSheet.setContentView()
+            externalWebViewBottomSheet.show()
+            externalWebViewBottomSheet.url = url
+        }
+    }
+
     private fun showExternalWebView(config: ExternalLoginConfig) {
         post {
             externalWebViewBottomSheet.setContentView()
             externalWebViewBottomSheet.show()
-            externalWebViewBottomSheet.config = config
+            with(config) {
+                externalWebViewBottomSheet.url = url
+                externalWebViewBottomSheet.selector = selector
+                externalWebViewBottomSheet.callbackUrl = script?.callbackUrl
+                externalWebViewBottomSheet.contentType = script?.callbackHeaders?.contentType
+                externalWebViewBottomSheet.xAccessToken = script?.callbackHeaders?.xAccessToken
+            }
+
         }
     }
 

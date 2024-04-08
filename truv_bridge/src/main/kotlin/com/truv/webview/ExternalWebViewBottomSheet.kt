@@ -33,18 +33,25 @@ class ExternalWebViewBottomSheet(
     private val onCookie: (cookies: List<Cookie>, pageUrl: String) -> Unit,
 ) : BottomSheetDialog(context, styleRes) {
 
-    var config: ExternalLoginConfig? = null
+    var url: String? = null
         set(value) {
             field = value
             if (value != null) {
-                findWebView()?.loadUrl(value.url)
+                findWebView()?.loadUrl(this.url!!)
                 findRefresher()?.setOnClickListener {
                     findWebView()?.reload()
                 }
-                findTitle()?.text = value.url
+                findTitle()?.text = value
                 startRefreshTimer()
             }
         }
+
+    var selector: String? = null
+    var callbackUrl: String? = null
+    //headers
+    var contentType: String? = null
+    var xAccessToken: String? = null
+
 
     val truvWebViewClient by lazy {
         TruvWebViewClient(context, eventListeners, onLoaded = {
@@ -88,11 +95,11 @@ class ExternalWebViewBottomSheet(
     private fun performRequest(responseString: String) {
         HttpRequest(
             headers = mapOf(
-                "Content-Type" to config?.script?.callbackHeaders?.contentType.orEmpty(),
-                "X-Access-Token" to config?.script?.callbackHeaders?.xAccessToken.orEmpty(),
+                "Content-Type" to contentType.orEmpty(),
+                "X-Access-Token" to xAccessToken.orEmpty(),
             ),
             body = responseString,
-            url = config?.script?.callbackUrl.orEmpty()
+            url = callbackUrl.orEmpty()
         ).json<String> { t, httpResponse ->
             Log.d("ExternalWebView", "performRequest: $t")
         }
@@ -108,7 +115,7 @@ class ExternalWebViewBottomSheet(
     }
 
     private val timerRunnable = Runnable {
-        val selector = config?.selector?.replace("\"", "'")
+        val selector = selector?.replace("\"", "'")
 
         findWebView()?.evaluateJavascript(
             "          (function() {\n" +
@@ -232,7 +239,7 @@ class ExternalWebViewBottomSheet(
     }
 
     fun getSelectorScript(): String {
-       return "window.document.evaluate(\"${config?.selector}\", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue != null"
+       return "window.document.evaluate(\"${selector}\", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue != null"
     }
     override fun dismiss() {
         findWebView()?.handler?.removeCallbacks(timerRunnable)
