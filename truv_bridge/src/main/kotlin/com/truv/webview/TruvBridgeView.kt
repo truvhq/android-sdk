@@ -1,6 +1,5 @@
 package com.truv.webview
 
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -11,9 +10,10 @@ import android.view.View
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebView
+import androidx.activity.result.ActivityResult
+import androidx.activity.result.ActivityResultLauncher
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.coordinatorlayout.widget.CoordinatorLayout
-import androidx.core.app.ActivityCompat.startActivityForResult
 import com.truv.BuildConfig
 import com.truv.R
 import com.truv.models.ExternalLoginConfig
@@ -28,9 +28,15 @@ class TruvBridgeView @JvmOverloads constructor(
     attrs: AttributeSet? = null,
 ) : CoordinatorLayout(context, attrs) {
 
-    private val CHOOSE_FILE_REQUEST_CODE = 101
-    private var filePathCallback: ValueCallback<Array<Uri>>? = null
     private val eventListeners = mutableSetOf<TruvEventsListener>()
+
+    var filePathCallback: ValueCallback<Array<Uri>>? = null
+
+    var activityResultLauncher: ActivityResultLauncher<Intent>? = null
+
+    fun addActivityForResultLauncher(activityResultLauncher: ActivityResultLauncher<Intent>) {
+        this.activityResultLauncher = activityResultLauncher
+    }
 
     private val bottomSheetEventListener: TruvEventsListener by lazy {
         object : TruvEventsListener {
@@ -120,13 +126,20 @@ class TruvBridgeView @JvmOverloads constructor(
         settings.javaScriptEnabled = true
         settings.allowContentAccess = true
         settings.domStorageEnabled = true
-        webViewClient = TruvWebViewClient(context, eventListeners, openExternalLinkInAppBrowser = {url ->
-            showExternalBrowser(url)
-        })
-        webChromeClient = object: WebChromeClient() {
-            override fun onShowFileChooser(webView: WebView, filePathCallback: ValueCallback<Array<Uri>>?, fileChooserParams: FileChooserParams?): Boolean {
-                (context as? Activity)?.startActivityForResult(fileChooserParams?.createIntent(), CHOOSE_FILE_REQUEST_CODE)
+        webViewClient =
+            TruvWebViewClient(context, eventListeners, openExternalLinkInAppBrowser = { url ->
+                showExternalBrowser(url)
+            })
+        webChromeClient = object : WebChromeClient() {
+            override fun onShowFileChooser(
+                webView: WebView,
+                filePathCallback: ValueCallback<Array<Uri>>?,
+                fileChooserParams: FileChooserParams,
+            ): Boolean {
                 this@TruvBridgeView.filePathCallback = filePathCallback
+                activityResultLauncher?.launch(fileChooserParams.createIntent()) ?: run {
+                    Log.d(TAG, "Activity result launcher is null")
+                }
                 return true
             }
         }
@@ -142,17 +155,6 @@ class TruvBridgeView @JvmOverloads constructor(
                 return@setOnKeyListener true
             }
             return@setOnKeyListener super.onKeyDown(keyCode, keyEvent)
-        }
-    }
-
-    fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        when (requestCode) {
-            CHOOSE_FILE_REQUEST_CODE -> {
-                if (resultCode == Activity.RESULT_OK) {
-                    filePathCallback?.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, data))
-                    filePathCallback = null
-                }
-            }
         }
     }
 
@@ -189,6 +191,13 @@ class TruvBridgeView @JvmOverloads constructor(
 
     fun loadBridgeTokenUrl(bridgeToken: String) {
         webView.loadUrl(String.format(Constants.BRIDGE_URL, bridgeToken))
+    }
+
+    fun onActivityResultListener(it: ActivityResult) {
+        val parseResult = WebChromeClient.FileChooserParams.parseResult(it.resultCode, it.data)
+        filePathCallback?.onReceiveValue(parseResult)?:run {
+            Log.d(TAG, "File path callback is null")
+        }
     }
 
     companion object {
