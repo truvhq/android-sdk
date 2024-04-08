@@ -9,7 +9,8 @@ import org.json.JSONException
 
 class WebAppInterface(
     private val eventListeners: Set<TruvEventsListener>,
-    private val onShowExternalWebView: ((ExternalLoginConfig) -> Unit)? = null
+    private val onShowExternalWebViewForLogin: ((ExternalLoginConfig) -> Unit)? = null,
+    private val onShowExternalWebView: ((String) -> Unit)? = null
 ) {
 
     @JavascriptInterface
@@ -31,14 +32,31 @@ class WebAppInterface(
 
         try {
             val eventPayload = TruvEventPayload.fromJson(event)
-            if (eventPayload.eventType == TruvEventPayload.EventType.START_EXTERNAL_LOGIN
-                && onShowExternalWebView != null && eventPayload.payload?.externalLoginConfig != null) {
 
-                val config = eventPayload.payload.externalLoginConfig
-                onShowExternalWebView.invoke(config)
-            } else {
-                eventListeners.forEach { it.onEvent(eventPayload) }
+            when (eventPayload.eventType) {
+                TruvEventPayload.EventType.START_EXTERNAL_LOGIN -> {
+                    eventPayload.payload?.externalLoginConfig?.let {
+                        onShowExternalWebViewForLogin?.invoke(it)
+                    } ?: run {
+                        Log.e(
+                            TAG, "START_EXTERNAL_LOGIN event received without externalLoginConfig"
+                        )
+                    }
+                }
+                TruvEventPayload.EventType.OAUTH_OPENED -> {
+                    eventPayload.payload?.url?.let {
+                        onShowExternalWebView?.invoke(it)
+                    } ?: run {
+                        Log.e(TAG, "OAUTH_OPENED event received without url")
+                    }
+                }
+
+                else -> {
+                    //no-op
+                }
             }
+            eventListeners.forEach { it.onEvent(eventPayload) }
+
         } catch (e: JSONException) {
             Log.e(TAG, "Json exception at onEvent invoked $event", e)
         }

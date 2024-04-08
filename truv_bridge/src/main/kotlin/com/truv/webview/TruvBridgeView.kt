@@ -130,10 +130,16 @@ class TruvBridgeView @JvmOverloads constructor(
                 return true
             }
         }
-        addJavascriptInterface(WebAppInterface(eventListeners) {
-            Log.d("TruvBridgeView", "Open external login")
-            showExternalWebView(config = it)
-        }, Constants.CITADEL_INTERFACE)
+        addJavascriptInterface(WebAppInterface(
+            eventListeners = eventListeners,
+            onShowExternalWebViewForLogin = {
+                Log.d("TruvBridgeView", "Open external login")
+                showExternalWebView(config = it)
+            },
+            onShowExternalWebView = {
+                showExternalWebView(it)
+            },
+        ), Constants.CITADEL_INTERFACE)
         setOnKeyListener { _, keyCode, keyEvent ->
             if (keyEvent.action == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_BACK) {
                 evaluateJavascript(Constants.SCRIPT_BACK_PRESS) {
@@ -166,11 +172,26 @@ class TruvBridgeView @JvmOverloads constructor(
         addView(webView, LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
     }
 
+    private fun showExternalWebView(url: String) {
+        post {
+            externalWebViewBottomSheet.setContentView()
+            externalWebViewBottomSheet.show()
+            externalWebViewBottomSheet.url = url
+        }
+    }
+
     private fun showExternalWebView(config: ExternalLoginConfig) {
         post {
             externalWebViewBottomSheet.setContentView()
             externalWebViewBottomSheet.show()
-            externalWebViewBottomSheet.config = config
+            with(config) {
+                externalWebViewBottomSheet.url = url
+                externalWebViewBottomSheet.selector = selector
+                externalWebViewBottomSheet.callbackUrl = script?.callbackUrl
+                externalWebViewBottomSheet.contentType = script?.callbackHeaders?.contentType
+                externalWebViewBottomSheet.xAccessToken = script?.callbackHeaders?.xAccessToken
+            }
+
         }
     }
 

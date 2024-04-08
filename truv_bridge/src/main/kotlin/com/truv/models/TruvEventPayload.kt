@@ -21,6 +21,7 @@ data class TruvEventPayload(
         val publicToken: String?,
         val taskId: String?,
         val providerId: String?,
+        val url: String?,
         val error: TruvError?,
         val externalLoginConfig: ExternalLoginConfig?
     ){
@@ -50,7 +51,8 @@ data class TruvEventPayload(
         ERROR("ERROR"),
         UNSUPPORTED_BROWSER("UNSUPPORTED_BROWSER"),
         START_EXTERNAL_LOGIN("START_EXTERNAL_LOGIN"),
-        CLOSE("CLOSE")
+        CLOSE("CLOSE"),
+        OAUTH_OPENED("OAUTH_OPENED"),
     }
 
     private fun EventType.toJson(): JSONObject {
@@ -94,6 +96,7 @@ data class TruvEventPayload(
                     publicToken = payload?.publicToken,
                     taskId = payload?.taskId,
                     providerId = payload?.providerId,
+                    url = payload?.url,
                     error = error,
                     externalLoginConfig = externalLoginConfig
                 )
