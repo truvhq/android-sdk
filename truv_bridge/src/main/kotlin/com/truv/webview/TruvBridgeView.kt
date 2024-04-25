@@ -11,9 +11,10 @@ import android.view.View
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebView
+import android.widget.Button
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.coordinatorlayout.widget.CoordinatorLayout
-import androidx.core.app.ActivityCompat.startActivityForResult
+import androidx.core.view.isVisible
 import com.truv.BuildConfig
 import com.truv.R
 import com.truv.models.ExternalLoginConfig
@@ -115,33 +116,63 @@ class TruvBridgeView @JvmOverloads constructor(
         }
     }
 
-    private val webView = WebView(context).apply {
-        id = View.generateViewId()
-        settings.javaScriptEnabled = true
-        settings.allowContentAccess = true
-        settings.domStorageEnabled = true
-        webViewClient = TruvWebViewClient(context, eventListeners, openExternalLinkInAppBrowser = {url ->
-            showExternalBrowser(url)
-        })
-        webChromeClient = object: WebChromeClient() {
-            override fun onShowFileChooser(webView: WebView, filePathCallback: ValueCallback<Array<Uri>>?, fileChooserParams: FileChooserParams?): Boolean {
-                (context as? Activity)?.startActivityForResult(fileChooserParams?.createIntent(), CHOOSE_FILE_REQUEST_CODE)
-                this@TruvBridgeView.filePathCallback = filePathCallback
-                return true
-            }
-        }
-        addJavascriptInterface(WebAppInterface(eventListeners) {
-            Log.d("TruvBridgeView", "Open external login")
-            showExternalWebView(config = it)
-        }, Constants.CITADEL_INTERFACE)
-        setOnKeyListener { _, keyCode, keyEvent ->
-            if (keyEvent.action == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_BACK) {
-                evaluateJavascript(Constants.SCRIPT_BACK_PRESS) {
-                    Log.d(TAG, "On Back pressed")
+    private val webView by lazy {
+        WebView(context).apply {
+            id = View.generateViewId()
+            errorLayout.findViewById<Button>(R.id.btnTryAgain).setOnClickListener { reload() }
+            settings.javaScriptEnabled = true
+            settings.allowContentAccess = true
+            settings.domStorageEnabled = true
+            webViewClient = TruvWebViewClient(
+                context, eventListeners,
+                onLoadingError = { isError ->
+                    if (isError) {
+                        if (errorLayout.parent == null) {
+                            addView(
+                                errorLayout, LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT
+                            )
+                        } else {
+                            errorLayout.isVisible = true
+                        }
+                    } else{
+                        errorLayout.isVisible = false
+                    }
+                },
+                onLoading = { isLoading ->
+                    if (isLoading) {
+                        errorLayout.isVisible = false
+                    }
+                },
+                openExternalLinkInAppBrowser = { url ->
+                    showExternalBrowser(url)
+                })
+            webChromeClient = object : WebChromeClient() {
+                override fun onShowFileChooser(
+                    webView: WebView,
+                    filePathCallback: ValueCallback<Array<Uri>>?,
+                    fileChooserParams: FileChooserParams?
+                ): Boolean {
+                    (context as? Activity)?.startActivityForResult(
+                        fileChooserParams?.createIntent(),
+                        CHOOSE_FILE_REQUEST_CODE
+                    )
+                    this@TruvBridgeView.filePathCallback = filePathCallback
+                    return true
                 }
-                return@setOnKeyListener true
             }
-            return@setOnKeyListener super.onKeyDown(keyCode, keyEvent)
+            addJavascriptInterface(WebAppInterface(eventListeners) {
+                Log.d("TruvBridgeView", "Open external login")
+                showExternalWebView(config = it)
+            }, Constants.CITADEL_INTERFACE)
+            setOnKeyListener { _, keyCode, keyEvent ->
+                if (keyEvent.action == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_BACK) {
+                    evaluateJavascript(Constants.SCRIPT_BACK_PRESS) {
+                        Log.d(TAG, "On Back pressed")
+                    }
+                    return@setOnKeyListener true
+                }
+                return@setOnKeyListener super.onKeyDown(keyCode, keyEvent)
+            }
         }
     }
 
@@ -149,7 +180,12 @@ class TruvBridgeView @JvmOverloads constructor(
         when (requestCode) {
             CHOOSE_FILE_REQUEST_CODE -> {
                 if (resultCode == Activity.RESULT_OK) {
-                    filePathCallback?.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, data))
+                    filePathCallback?.onReceiveValue(
+                        WebChromeClient.FileChooserParams.parseResult(
+                            resultCode,
+                            data
+                        )
+                    )
                     filePathCallback = null
                 }
             }
@@ -160,6 +196,10 @@ class TruvBridgeView @JvmOverloads constructor(
         val intent: CustomTabsIntent = CustomTabsIntent.Builder()
             .build()
         intent.launchUrl(this@TruvBridgeView.context, Uri.parse(url))
+    }
+
+    private val errorLayout by lazy {
+        inflate(context, R.layout.error_loading, null)
     }
 
     init {

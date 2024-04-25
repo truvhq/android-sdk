@@ -38,6 +38,9 @@ class ExternalWebViewBottomSheet(
             field = value
             if (value != null) {
                 findWebView()?.loadUrl(value.url)
+                findErrorRetryButton()?.setOnClickListener {
+                    findWebView()?.reload()
+                }
                 findRefresher()?.setOnClickListener {
                     findWebView()?.reload()
                 }
@@ -55,9 +58,14 @@ class ExternalWebViewBottomSheet(
 //                }
 //            }
         }, onLoading = {
+            findErrorLoading()?.isVisible = false
             findWebView()?.isVisible = !it
             findProgressBar()?.isVisible = it
-        })
+        },
+            onLoadingError = { isError ->
+                findWebView()?.isVisible = !isError
+                findErrorLoading()?.isVisible = isError
+            })
     }
 
     private fun startProgressAnimation(context: Context) {
@@ -67,6 +75,7 @@ class ExternalWebViewBottomSheet(
     }
 
     private fun initWebView() = with(findWebView()!!) {
+        findErrorLoading()?.isVisible = false
         settings.javaScriptEnabled = true
         settings.allowContentAccess = true
         settings.domStorageEnabled = true
@@ -239,7 +248,8 @@ class ExternalWebViewBottomSheet(
         cookiesUpdateTimer.cancel()
         super.dismiss()
     }
-
+    fun findErrorLoading(): View? = findViewById(R.id.errorLoadingLayout)
+    fun findErrorRetryButton(): View? = findViewById(R.id.btnTryAgain)
     fun findWebView(): WebView? = findViewById(R.id.webview)
     fun findProgressBar(): View? = findViewById(R.id.progress_bar)
     fun findTitle(): TextView? = findViewById(R.id.title)
