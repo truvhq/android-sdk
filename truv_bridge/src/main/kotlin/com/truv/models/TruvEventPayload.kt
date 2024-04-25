@@ -71,7 +71,7 @@ data class TruvEventPayload(
                         ExternalLoginConfig(
                             url = payload?.url!!,
                             selector = payload.isLoggedIn?.selector!!,
-                            script = payload.script
+                            script = payload.isLoggedIn.script ?: payload.script
                         )
                     } else null
 

@@ -49,11 +49,13 @@ data class ResponseDto(
         }
 
         data class IsLoggedIn(
+            val script: Script?,
             val selector: String?
         ) {
             companion object {
                 fun parse(json: JSONObject): IsLoggedIn {
                     return IsLoggedIn(
+                        script = json.optJSONObject("script")?.let { Script.parse(it) },
                         selector = json.optString("selector")
                     )
                 }
