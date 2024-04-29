@@ -57,10 +57,12 @@ class ExternalWebViewBottomSheet(
 //                    applyScript(script)
 //                }
 //            }
-        }, onLoading = {
-            findErrorLoading()?.isVisible = false
-            findWebView()?.isVisible = !it
-            findProgressBar()?.isVisible = it
+        }, onLoading = { isLoading ->
+            if (isLoading) {
+                findErrorLoading()?.isVisible = false
+            }
+            findWebView()?.isVisible = !isLoading
+            findProgressBar()?.isVisible = isLoading
         },
             onLoadingError = { isError ->
                 findWebView()?.isVisible = !isError
