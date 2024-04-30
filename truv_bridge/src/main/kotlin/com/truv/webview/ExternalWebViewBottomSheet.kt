@@ -77,6 +77,10 @@ class ExternalWebViewBottomSheet(
     }
 
     private fun initWebView() = with(findWebView()!!) {
+        findErrorLoading()?.findViewById<TextView>(R.id.tvErrorMessage)?.text =
+                context.getString(R.string.error_message_connection_error)
+        findErrorLoading()?.findViewById<TextView>(R.id.tvErrorDescription)?.text =
+                context.getString(R.string.error_description)
         findErrorLoading()?.isVisible = false
         settings.javaScriptEnabled = true
         settings.allowContentAccess = true
@@ -203,29 +207,37 @@ class ExternalWebViewBottomSheet(
                     return@evaluateJavascript
                 }
                 val seenURLs = truvWebViewClient.getSeenPages()
-                Log.d("ProviderWebView", "Collecting cookies from seen urls: ${seenURLs.joinToString(", ")}")
+                Log.d(
+                    "ProviderWebView",
+                    "Collecting cookies from seen urls: ${seenURLs.joinToString(", ")}"
+                )
 
                 val dashboardUrl = findWebView()?.url
 
                 val allCookies = seenURLs.fold(listOf<Cookie>()) { acc, url ->
                     val cookies = CookieManager.getInstance().getCookie(url) ?: return@fold acc
-                    val cookieStrings = cookies.split(";".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+                    val cookieStrings =
+                        cookies.split(";".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
                     val domain = URL(url).host
-                    val topLevelDomain = "." + domain.split(".").dropLastWhile { it.isEmpty() }.takeLast(2).joinToString(".")
+                    val topLevelDomain =
+                        "." + domain.split(".").dropLastWhile { it.isEmpty() }.takeLast(2)
+                            .joinToString(".")
 
                     val list = cookieStrings
-                        .map { it.split("=".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray() }
+                        .map {
+                            it.split("=".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+                        }
                         .filter { it.size == 2 }
                         .map { split ->
-                        return@map Cookie(
-                            name = split[0].trim(),
-                            value = split[1],
-                            domain = topLevelDomain,
-                            path = "/",
-                            secure = false,
-                            httpOnly = false,
-                        )
-                    }
+                            return@map Cookie(
+                                name = split[0].trim(),
+                                value = split[1],
+                                domain = topLevelDomain,
+                                path = "/",
+                                secure = false,
+                                httpOnly = false,
+                            )
+                        }
 
                     return@fold acc.plus(list)
                 }
@@ -243,13 +255,15 @@ class ExternalWebViewBottomSheet(
     }
 
     fun getSelectorScript(): String {
-       return "window.document.evaluate(\"${config?.selector}\", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue != null"
+        return "window.document.evaluate(\"${config?.selector}\", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue != null"
     }
+
     override fun dismiss() {
         findWebView()?.handler?.removeCallbacks(timerRunnable)
         cookiesUpdateTimer.cancel()
         super.dismiss()
     }
+
     fun findErrorLoading(): View? = findViewById(R.id.errorLoadingLayout)
     fun findErrorRetryButton(): View? = findViewById(R.id.btnTryAgain)
     fun findWebView(): WebView? = findViewById(R.id.webview)

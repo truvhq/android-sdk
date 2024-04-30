@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/errorLoadingLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -22,22 +23,24 @@
         <!--            android:src="@drawable/ic_error" />-->
 
         <TextView
+            android:id="@+id/tvErrorMessage"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="@string/error_message"
             android:textColor="@color/dark_gray"
             android:textSize="24sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            tools:text="@string/error_message_unable_to_connect" />
 
         <TextView
+            android:id="@+id/tvErrorDescription"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:gravity="center"
-            android:text="@string/error_description"
             android:textColor="@color/light_gray"
-            android:textSize="14sp" />
+            android:textSize="14sp"
+            tools:text="@string/error_description" />
     </LinearLayout>
 
     <androidx.appcompat.widget.AppCompatButton
@@ -46,10 +49,10 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_marginTop="24dp"
-        android:gravity="center"
-        android:padding="12dp"
         android:background="@drawable/bg_button_selector"
         android:elevation="2dp"
+        android:gravity="center"
+        android:padding="12dp"
         android:text="@string/try_again"
         android:textAllCaps="false"
         android:textColor="@color/white" />
