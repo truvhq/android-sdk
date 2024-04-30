@@ -40,13 +40,15 @@
             android:textSize="14sp" />
     </LinearLayout>
 
-    <Button
+    <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btnTryAgain"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_marginTop="24dp"
-        android:background="@drawable/bg_button_primary"
+        android:gravity="center"
+        android:padding="12dp"
+        android:background="@drawable/bg_button_selector"
         android:elevation="2dp"
         android:text="@string/try_again"
         android:textAllCaps="false"
