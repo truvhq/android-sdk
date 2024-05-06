@@ -22,6 +22,7 @@ import com.truv.models.ResponseDto
 import com.truv.network.HttpRequest
 import com.truv.webview.models.Cookie
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.net.URL
@@ -48,12 +49,11 @@ class ExternalWebViewBottomSheet(
 
     val truvWebViewClient by lazy {
         TruvWebViewClient(context, eventListeners, onLoaded = {
-//            TODO: uncomment when script will be ready
-//            config?.script?.let { script ->
-//                runBlocking {
-//                    applyScript(script)
-//                }
-//            }
+            config?.script?.let { script ->
+                runBlocking {
+                    applyScript(script)
+                }
+            }
         }, onLoading = {
             findWebView()?.isVisible = !it
             findProgressBar()?.isVisible = it
