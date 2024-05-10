@@ -127,17 +127,12 @@ class TruvBridgeView @JvmOverloads constructor(
             webViewClient = TruvWebViewClient(
                 context, eventListeners,
                 onLoadingError = { isError ->
-                    if (isError) {
-                        if (errorLayout.parent == null) {
-                            addView(
-                                errorLayout, LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT
-                            )
-                        } else {
-                            errorLayout.isVisible = true
-                        }
-                    } else{
-                        errorLayout.isVisible = false
+                    if (errorLayout.parent == null) {
+                        addView(
+                            errorLayout, LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT
+                        )
                     }
+                    errorLayout.isVisible = isError
                 },
                 onLoading = { isLoading ->
                     if (isLoading) {
