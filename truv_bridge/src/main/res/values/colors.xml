@@ -4,6 +4,7 @@
     <color name="green_500">#4CAF50</color>
     <color name="white">#FFFFFF</color>
     <color name="blue">#2C64E3</color>
+    <color name="blue_dark">#043BB9</color>
     <color name="light_gray">#9699A0</color> />
     <color name="dark_gray">#141A28</color> />
 </resources>

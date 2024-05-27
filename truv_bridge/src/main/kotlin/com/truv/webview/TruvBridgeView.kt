@@ -12,6 +12,7 @@ import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.widget.Button
+import android.widget.TextView
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.isVisible
@@ -199,7 +200,11 @@ class TruvBridgeView @JvmOverloads constructor(
     }
 
     private val errorLayout by lazy {
-        inflate(context, R.layout.error_loading, null)
+        val errorLayout = inflate(context, R.layout.error_loading, null)
+        errorLayout?.findViewById<View>(R.id.tvErrorDescription)?.isVisible = false
+        errorLayout?.findViewById<TextView>(R.id.tvErrorMessage)?.text =
+            context.getString(R.string.error_message_connection_error)
+        errorLayout
     }
 
     init {

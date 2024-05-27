@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="error_message">Unable to connect</string>
+    <string name="error_message_unable_to_connect">Unable to connect</string>
+    <string name="error_message_connection_error">Connection error</string>
     <string name="error_description">Check your connection and make sure that the company VPN is enabled in settings, if necessary.</string>
     <string name="try_again">Try again</string>
 </resources>
