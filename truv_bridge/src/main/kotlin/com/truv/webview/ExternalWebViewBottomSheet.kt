@@ -13,6 +13,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.annotation.StyleRes
 import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.truv.R
@@ -22,6 +23,7 @@ import com.truv.models.ResponseDto
 import com.truv.network.HttpRequest
 import com.truv.webview.models.Cookie
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -53,7 +55,7 @@ class ExternalWebViewBottomSheet(
     val truvWebViewClient by lazy {
         TruvWebViewClient(context, eventListeners, onLoaded = {
             config?.script?.let { script ->
-                runBlocking {
+                lifecycleScope.launch {
                     applyScript(script)
                 }
             }
@@ -113,12 +115,16 @@ class ExternalWebViewBottomSheet(
         }
     }
 
-    private suspend fun applyScript(script: ResponseDto.Payload.Script) {
-        withContext(Dispatchers.IO) {
+    private suspend fun applyScript(script: ResponseDto.Payload.Script) = withContext(Dispatchers.IO) {
+        try {
             val scriptText = URL(script.url).readText()
             findWebView()?.handler?.post {
                 findWebView()?.evaluateJavascript(scriptText, null)
             }
+        } catch (e: Exception) {
+            Log.e("ExternalWebView", "Error applying script", e)
+            findWebView()?.isVisible = false
+            findErrorLoading()?.isVisible = true
         }
     }
 
