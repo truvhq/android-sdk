@@ -32,10 +32,8 @@ class WebAppInterface(
         try {
             val eventPayload = TruvEventPayload.fromJson(event)
             if (eventPayload.eventType == TruvEventPayload.EventType.START_EXTERNAL_LOGIN
-                && onShowExternalWebView != null && eventPayload.payload?.externalLoginConfig != null) {
-
-                val config = eventPayload.payload.externalLoginConfig
-                onShowExternalWebView.invoke(config)
+                && eventPayload.payload != null && onShowExternalWebView != null) {
+                onShowExternalWebView.invoke(eventPayload.payload.externalLoginConfig)
             } else {
                 eventListeners.forEach { it.onEvent(eventPayload) }
             }

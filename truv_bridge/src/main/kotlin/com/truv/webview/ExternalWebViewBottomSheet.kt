@@ -23,8 +23,10 @@ import com.truv.models.ResponseDto
 import com.truv.network.HttpRequest
 import com.truv.webview.models.Cookie
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.net.URL
@@ -39,7 +41,7 @@ class ExternalWebViewBottomSheet(
     var config: ExternalLoginConfig? = null
         set(value) {
             field = value
-            if (value != null) {
+            if (value?.url != null) {
                 findWebView()?.loadUrl(value.url)
                 findErrorRetryButton()?.setOnClickListener {
                     findWebView()?.reload()
@@ -48,7 +50,7 @@ class ExternalWebViewBottomSheet(
                     findWebView()?.reload()
                 }
                 findTitle()?.text = value.url
-                startRefreshTimer()
+                scriptTimer.start()
             }
         }
 
@@ -102,18 +104,17 @@ class ExternalWebViewBottomSheet(
         cookiesUpdateTimer.start()
     }
 
-    private fun performRequest(responseString: String) {
+    private suspend fun performScriptRequest(scriptUrl : String): String? = callbackFlow<String>{
         HttpRequest(
-            headers = mapOf(
-                "Content-Type" to config?.script?.callbackHeaders?.contentType.orEmpty(),
-                "X-Access-Token" to config?.script?.callbackHeaders?.xAccessToken.orEmpty(),
-            ),
-            body = responseString,
-            url = config?.script?.callbackUrl.orEmpty()
-        ).json<String> { t, httpResponse ->
-            Log.d("ExternalWebView", "performRequest: $t")
+            method = "GET",
+            url = scriptUrl
+        ).response { httpResponse ->
+            trySend(httpResponse.body ?: "")
+            Log.d("ExternalWebView", "performRequest: $httpResponse")
         }
-    }
+
+        awaitClose { }
+    }.firstOrNull()
 
     private suspend fun applyScript(script: ResponseDto.Payload.Script) = withContext(Dispatchers.IO) {
         try {
@@ -128,7 +129,32 @@ class ExternalWebViewBottomSheet(
         }
     }
 
-    private val timerRunnable = Runnable {
+    private fun performRequest(responseString: String) {
+        HttpRequest(
+            headers = mapOf(
+                "Content-Type" to config?.script?.callbackHeaders?.contentType.orEmpty(),
+                "X-Access-Token" to config?.script?.callbackHeaders?.xAccessToken.orEmpty(),
+            ),
+            body = responseString,
+            url = config?.script?.callbackUrl.orEmpty()
+        ).json<String> { t, httpResponse ->
+            Log.d("ExternalWebView", "performRequest: $t")
+        }
+    }
+
+    private fun scriptRunner() {
+
+        if (!config?.selector.isNullOrEmpty()) {
+            selectorRequest()
+        }
+        if (!config?.scriptUrl.isNullOrEmpty()) {
+            lifecycleScope.launch {
+                scriptUrlRequest()
+            }
+        }
+    }
+
+    private fun selectorRequest() {
         val selector = config?.selector?.replace("\"", "'")
 
         findWebView()?.evaluateJavascript(
@@ -154,12 +180,14 @@ class ExternalWebViewBottomSheet(
                     "        ",
             null
         )
-        startRefreshTimer()
     }
 
-    private fun startRefreshTimer() {
-        findWebView()?.handler?.removeCallbacks(timerRunnable)
-        findWebView()?.handler?.postDelayed(timerRunnable, DELAY_MILLIS)
+    private suspend fun scriptUrlRequest() {
+        performScriptRequest(config?.scriptUrl!!)?.let { script ->
+            findWebView()?.handler?.post {
+                findWebView()?.evaluateJavascript(script, null)
+            }
+        }
     }
 
     fun setContentView() {
@@ -203,6 +231,16 @@ class ExternalWebViewBottomSheet(
         startProgressAnimation(contentView.context)
     }
 
+    private val scriptTimer = object : CountDownTimer(Long.MAX_VALUE, 1000) {
+
+        override fun onTick(millisUntilFinished: Long) {
+            scriptRunner()
+        }
+
+        override fun onFinish() {
+
+        }
+    }
 
     private val cookiesUpdateTimer = object : CountDownTimer(Long.MAX_VALUE, 1000) {
 
@@ -265,7 +303,7 @@ class ExternalWebViewBottomSheet(
     }
 
     override fun dismiss() {
-        findWebView()?.handler?.removeCallbacks(timerRunnable)
+        scriptTimer.cancel()
         cookiesUpdateTimer.cancel()
         super.dismiss()
     }

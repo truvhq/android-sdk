@@ -85,7 +85,6 @@ class TruvBridgeView @JvmOverloads constructor(
             eventListeners = setOf(bottomSheetEventListener),
             onCookie = { cookies, pageUrl ->
                 sendCookies(cookies, pageUrl)
-                externalWebViewBottomSheet.dismiss()
             }).apply {
             setOnDismissListener {
                 webView.evaluateJavascript(Constants.SCRIPT_EXTERNAL_LOGIN_CANCEL) { result ->

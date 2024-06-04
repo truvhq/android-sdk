@@ -10,7 +10,8 @@ import java.util.concurrent.Executors
 
 class HttpRequest(
     val url: String,
-    val body: String = "",
+    val body: String? = null,
+    val method : String = "POST",
     val headers: Map<String, String> = mapOf(),
     val config: ((HttpURLConnection) -> Unit)? = null
 ) {
@@ -19,25 +20,30 @@ class HttpRequest(
             try {
                 val url = URL(url)
                 val connection = url.openConnection() as HttpURLConnection
-                connection.requestMethod = "POST"
+                connection.requestMethod = method
                 headers.forEach { (key, value) ->
                     connection.setRequestProperty(key, value)
                 }
                 config?.let { it(connection) }
-                connection.doOutput = true
-                connection.outputStream.use {
-                    it.write(body.toByteArray())
+                connection.doOutput = if (method == "POST") true else false
+                body?.let {
+                    connection.outputStream.use {
+                        it.write(body.toByteArray())
+                    }
                 }
+
                 val response = HttpResponse()
                 response.connection = connection
                 //for debug reasons
                 val responseMessage = connection.responseMessage
                 val responseCode = connection.responseCode
-                val errorBuffer = BufferedReader( InputStreamReader(connection.getErrorStream()))
-                var strCurrentLine: String?
-                while (errorBuffer.readLine().also { strCurrentLine = it } != null) {
-                    println(strCurrentLine)
+                connection.errorStream?.bufferedReader().use { reader ->
+                    var strCurrentLine: String?
+                    while (reader?.readLine().also { strCurrentLine = it } != null) {
+                        println(strCurrentLine)
+                    }
                 }
+
                 val responseBody = connection.inputStream.use {
                     BufferedReader(InputStreamReader(it)).use { reader ->
                         reader.readText()

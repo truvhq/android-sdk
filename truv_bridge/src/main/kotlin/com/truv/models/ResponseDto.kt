@@ -49,14 +49,14 @@ data class ResponseDto(
         }
 
         data class IsLoggedIn(
-            val script: Script?,
-            val selector: String?
+            val selector: String?,
+            val scriptUrl: String?,
         ) {
             companion object {
                 fun parse(json: JSONObject): IsLoggedIn {
                     return IsLoggedIn(
-                        script = json.optJSONObject("script")?.let { Script.parse(it) },
-                        selector = json.optString("selector")
+                        selector = json.optString("selector"),
+                        scriptUrl = json.optString("script_url")
                     )
                 }
             }
@@ -135,6 +135,7 @@ data class ResponseDto(
             return ResponseDto(
                 eventType = json.optString("event_type"),
                 payload = json.optJSONObject("payload")?.let { Payload.parse(it) },
+
             )
         }
     }
