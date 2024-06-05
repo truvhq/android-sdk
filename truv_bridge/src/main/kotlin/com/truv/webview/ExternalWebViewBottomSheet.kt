@@ -98,48 +98,49 @@ class ExternalWebViewBottomSheet(
         addJavascriptInterface(WebAppInterface(eventListeners), Constants.CITADEL_INTERFACE)
         addJavascriptInterface(MiddleWareInterface {
             val responseDto = MiddleWareResponseDto.parse(JSONObject(it))
-            performRequest(it)
+            lifecycleScope.launch {
+                performRequest(it)
+            }
+
         }, "callbackInterface")
 
         cookiesUpdateTimer.start()
     }
 
-    private suspend fun performScriptRequest(scriptUrl : String): String? = callbackFlow<String>{
-        HttpRequest(
+    private suspend fun performScriptRequest(scriptUrl: String): String? = withContext(Dispatchers.IO) {
+        val response = HttpRequest(
             method = "GET",
             url = scriptUrl
-        ).response { httpResponse ->
-            trySend(httpResponse.body ?: "")
-            Log.d("ExternalWebView", "performRequest: $httpResponse")
-        }
+        ).response()
 
-        awaitClose { }
-    }.firstOrNull()
-
-    private suspend fun applyScript(script: ResponseDto.Payload.Script) = withContext(Dispatchers.IO) {
-        try {
-            val scriptText = URL(script.url).readText()
-            findWebView()?.handler?.post {
-                findWebView()?.evaluateJavascript(scriptText, null)
-            }
-        } catch (e: Exception) {
-            Log.e("ExternalWebView", "Error applying script", e)
-            findWebView()?.isVisible = false
-            findErrorLoading()?.isVisible = true
-        }
+        Log.d("ExternalWebView", "performRequest: $response")
+        return@withContext response?.body
     }
 
-    private fun performRequest(responseString: String) {
-        HttpRequest(
+    private suspend fun applyScript(script: ResponseDto.Payload.Script) =
+        withContext(Dispatchers.IO) {
+            try {
+                val scriptText = URL(script.url).readText()
+                findWebView()?.handler?.post {
+                    findWebView()?.evaluateJavascript(scriptText, null)
+                }
+            } catch (e: Exception) {
+                Log.e("ExternalWebView", "Error applying script", e)
+                findWebView()?.isVisible = false
+                findErrorLoading()?.isVisible = true
+            }
+        }
+
+    private suspend fun performRequest(responseString: String) {
+        val response = HttpRequest(
             headers = mapOf(
                 "Content-Type" to config?.script?.callbackHeaders?.contentType.orEmpty(),
                 "X-Access-Token" to config?.script?.callbackHeaders?.xAccessToken.orEmpty(),
             ),
             body = responseString,
             url = config?.script?.callbackUrl.orEmpty()
-        ).json<String> { t, httpResponse ->
-            Log.d("ExternalWebView", "performRequest: $t")
-        }
+        ).response()
+        Log.d("ExternalWebView", "performRequest: $response")
     }
 
     private fun scriptRunner() {
