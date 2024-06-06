@@ -2,9 +2,6 @@ package com.truv.webview
 
 import android.content.Context
 import android.graphics.Color
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
-import android.os.Build
 import android.os.CountDownTimer
 import android.util.Log
 import android.view.View
@@ -26,6 +23,7 @@ import com.truv.models.ResponseDto
 import com.truv.network.HttpRequest
 import com.truv.webview.models.Cookie
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -74,6 +72,8 @@ class ExternalWebViewBottomSheet(
             })
     }
 
+    var scriptFromUrl: String? = null
+
     private fun startProgressAnimation(context: Context) {
         val rotation = AnimationUtils.loadAnimation(context, R.anim.rotate)
         rotation.fillAfter = true
@@ -120,12 +120,15 @@ class ExternalWebViewBottomSheet(
 
     private suspend fun applyScript(script: ResponseDto.Payload.Script) =
         withContext(Dispatchers.Default) {
-            val scriptText = URL(script.url).readText()
-            withContext(Dispatchers.Main) {
-                try {
+            try {
+                val scriptText = URL(script.url).readText()
+                delay(2000)
+                withContext(Dispatchers.Main) {
                     evaluateScriptOnWebView(scriptText)
-                } catch (e: Exception) {
-                    Log.e("ExternalWebView", "Error applying script", e)
+                }
+            } catch (e: Exception) {
+                Log.e("ExternalWebView", "Error applying script", e)
+                withContext(Dispatchers.Main) {
                     findWebView()?.isVisible = false
                     findErrorLoading()?.isVisible = true
                 }
@@ -144,24 +147,18 @@ class ExternalWebViewBottomSheet(
         Log.d("ExternalWebView", "performRequest: $response")
     }
 
-    private fun scriptRunner() {
-
+    private suspend fun scriptRunner() {
         if (!config?.selector.isNullOrEmpty()) {
-            selectorRequest()
+            selectorRequest(config?.selector!!.replace("\"", "'"))
         }
         if (!config?.scriptUrl.isNullOrEmpty()) {
-            lifecycleScope.launch {
-                scriptUrlRequest()
-            }
+            scriptUrlRequest()
         }
     }
 
-    private fun selectorRequest() {
-        val selector = config?.selector?.replace("\"", "'")
+    private suspend fun selectorRequest(selector: String) {
         val script = getSelectorScript(selector)
-        evaluateScriptOnWebView(
-            script
-        )
+        evaluateScriptOnWebView(script)
     }
 
     private fun getSelectorScript(selector: String?) = """
@@ -193,10 +190,11 @@ class ExternalWebViewBottomSheet(
     """
 
     private suspend fun scriptUrlRequest() {
-        performScriptRequest(config?.scriptUrl!!)?.let { script ->
-            withContext(Dispatchers.Main) {
-                findWebView()?.evaluateJavascript(script, null)
-            }
+        scriptFromUrl ?: run {
+            performScriptRequest(config?.scriptUrl!!)
+        }
+        scriptFromUrl?.let { script ->
+            evaluateScriptOnWebView(script)
         }
     }
 
@@ -244,7 +242,9 @@ class ExternalWebViewBottomSheet(
     private val scriptTimer = object : CountDownTimer(Long.MAX_VALUE, 1000) {
 
         override fun onTick(millisUntilFinished: Long) {
-            scriptRunner()
+            lifecycleScope.launch {
+                scriptRunner()
+            }
         }
 
         override fun onFinish() {
@@ -308,13 +308,15 @@ class ExternalWebViewBottomSheet(
         }
     }
 
-    fun evaluateScriptOnWebView(script: String) {
+    private suspend fun evaluateScriptOnWebView(script: String) = withContext(Dispatchers.Main) {
         try {
-            findWebView()?.evaluateJavascript(script, null)
+            if (findWebView()?.isVisible == true) {
+                findWebView()?.evaluateJavascript(script, null)
+            } else {
+                Log.d("ExternalWebView", "WebView is not visible")
+            }
         } catch (ex: Exception) {
             Log.e("ExternalWebView", "Error applying script", ex)
-//            findWebView()?.isVisible = false
-//            findErrorLoading()?.isVisible = true
         }
 
     }
