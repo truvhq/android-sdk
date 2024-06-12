@@ -7,12 +7,6 @@ data class TruvEventPayload(
     val payload: Payload?,
     val eventType: EventType
 ) {
-    fun toJson(): String {
-        return JSONObject().apply {
-            put("eventType", eventType.toJson())
-            put("payload", payload?.toJson())
-        }.toString()
-    }
     data class Payload(
         val bridgeToken: String?,
         val productType: String?,
@@ -22,7 +16,7 @@ data class TruvEventPayload(
         val taskId: String?,
         val providerId: String?,
         val error: TruvError?,
-        val externalLoginConfig: ExternalLoginConfig?
+        val externalLoginConfig: ExternalLoginConfig,
     ){
         fun toJson(): JSONObject {
             return JSONObject().apply {
@@ -67,13 +61,12 @@ data class TruvEventPayload(
             val responseDto = ResponseDto.parse(json)
             val payloadOut = with(responseDto) {
                 val externalLoginConfig =
-                    if (!payload?.isLoggedIn?.selector.isNullOrEmpty() && !payload?.url.isNullOrEmpty()) {
-                        ExternalLoginConfig(
-                            url = payload?.url!!,
-                            selector = payload.isLoggedIn?.selector!!,
-                            script = payload.script
-                        )
-                    } else null
+                    ExternalLoginConfig(
+                        url = payload?.url,
+                        selector = payload?.isLoggedIn?.selector,
+                        scriptUrl = payload?.isLoggedIn?.scriptUrl,
+                        script = payload?.script
+                    )
 
                 val error = payload?.error?.let {
                     TruvError(
