@@ -25,9 +25,12 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:gravity="center"
-            android:paddingLeft="8dp"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:paddingLeft="64dp"
+            android:paddingRight="64dp"
             android:textColor="@color/green_500"
-            tools:text="adb.com" />
+            tools:text="linklinklinklinklinklinklinklinklinklinklink.com" />
     </LinearLayout>
 
     <ImageView
