@@ -1,6 +1,7 @@
 package com.truv.webview
 
 import android.content.Context
+import android.os.Build
 import android.util.Log
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
@@ -14,6 +15,7 @@ class TruvWebViewClient(
     private val eventListeners: Set<TruvEventsListener>,
     private val onLoading: (Boolean) -> Unit = {},
     private val onLoaded: () -> Unit = {},
+    private val onLoadingError: (Boolean) -> Unit = {},
     private val openExternalLinkInAppBrowser: ((String) -> Unit)? = null,
 ) : WebViewClient() {
     private val seenURLs = mutableSetOf<String>()
@@ -58,8 +60,25 @@ class TruvWebViewClient(
         super.doUpdateVisitedHistory(view, url, isReload)
     }
 
+    override fun onReceivedError(
+        view: WebView,
+        request: WebResourceRequest,
+        error: WebResourceError
+    ) {
+        super.onReceivedError(view, request, error)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (error.errorCode == WebViewClient.ERROR_CONNECT ||
+                error.errorCode == WebViewClient.ERROR_TIMEOUT ||
+                error.errorCode == WebViewClient.ERROR_HOST_LOOKUP
+            ) {
+                onLoadingError(true)
+            } else{
+                onLoadingError(false)
+            }
+        }
+    }
+
     fun getSeenPages(): Set<String> {
         return seenURLs
     }
-
 }

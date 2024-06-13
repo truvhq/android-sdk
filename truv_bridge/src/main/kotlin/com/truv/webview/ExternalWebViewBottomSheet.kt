@@ -13,6 +13,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.annotation.StyleRes
 import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.truv.R
@@ -22,6 +23,8 @@ import com.truv.models.ResponseDto
 import com.truv.network.HttpRequest
 import com.truv.webview.models.Cookie
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.net.URL
@@ -36,29 +39,40 @@ class ExternalWebViewBottomSheet(
     var config: ExternalLoginConfig? = null
         set(value) {
             field = value
-            if (value != null) {
+            if (value?.url != null) {
                 findWebView()?.loadUrl(value.url)
+                findErrorRetryButton()?.setOnClickListener {
+                    findWebView()?.reload()
+                }
                 findRefresher()?.setOnClickListener {
                     findWebView()?.reload()
                 }
                 findTitle()?.text = value.url
-                startRefreshTimer()
+                scriptTimer.start()
             }
         }
 
     val truvWebViewClient by lazy {
         TruvWebViewClient(context, eventListeners, onLoaded = {
-//            TODO: uncomment when script will be ready
-//            config?.script?.let { script ->
-//                runBlocking {
-//                    applyScript(script)
-//                }
-//            }
-        }, onLoading = {
-            findWebView()?.isVisible = !it
-            findProgressBar()?.isVisible = it
-        })
+            config?.script?.let { script ->
+                lifecycleScope.launch {
+                    applyScript(script)
+                }
+            }
+        }, onLoading = { isLoading ->
+            if (isLoading) {
+                findErrorLoading()?.isVisible = false
+            }
+            findWebView()?.isVisible = !isLoading
+            findProgressBar()?.isVisible = isLoading
+        },
+            onLoadingError = { isError ->
+                findWebView()?.isVisible = !isError
+                findErrorLoading()?.isVisible = isError
+            })
     }
+
+    var scriptFromUrl: String? = null
 
     private fun startProgressAnimation(context: Context) {
         val rotation = AnimationUtils.loadAnimation(context, R.anim.rotate)
@@ -67,6 +81,11 @@ class ExternalWebViewBottomSheet(
     }
 
     private fun initWebView() = with(findWebView()!!) {
+        findErrorLoading()?.findViewById<TextView>(R.id.tvErrorMessage)?.text =
+            context.getString(R.string.error_message_connection_error)
+        findErrorLoading()?.findViewById<TextView>(R.id.tvErrorDescription)?.text =
+            context.getString(R.string.error_description)
+        findErrorLoading()?.isVisible = false
         settings.javaScriptEnabled = true
         settings.allowContentAccess = true
         settings.domStorageEnabled = true
@@ -79,66 +98,104 @@ class ExternalWebViewBottomSheet(
         addJavascriptInterface(WebAppInterface(eventListeners), Constants.CITADEL_INTERFACE)
         addJavascriptInterface(MiddleWareInterface {
             val responseDto = MiddleWareResponseDto.parse(JSONObject(it))
-            performRequest(it)
+            lifecycleScope.launch {
+                performRequest(it)
+            }
+
         }, "callbackInterface")
 
         cookiesUpdateTimer.start()
     }
 
-    private fun performRequest(responseString: String) {
-        HttpRequest(
+    private suspend fun performScriptRequest(scriptUrl: String): String? =
+        withContext(Dispatchers.Default) {
+            val response = HttpRequest(
+                method = "GET",
+                url = scriptUrl
+            ).response()
+
+            Log.d("ExternalWebView", "performRequest: $response")
+            response?.body
+        }
+
+    private suspend fun applyScript(script: ResponseDto.Payload.Script) =
+        withContext(Dispatchers.Default) {
+            try {
+                val scriptText = URL(script.url).readText()
+                delay(2000)
+                withContext(Dispatchers.Main) {
+                    evaluateScriptOnWebView(scriptText)
+                }
+            } catch (e: Exception) {
+                Log.e("ExternalWebView", "Error applying script", e)
+                withContext(Dispatchers.Main) {
+                    findWebView()?.isVisible = false
+                    findErrorLoading()?.isVisible = true
+                }
+            }
+        }
+
+    private suspend fun performRequest(responseString: String) {
+        val response = HttpRequest(
             headers = mapOf(
                 "Content-Type" to config?.script?.callbackHeaders?.contentType.orEmpty(),
                 "X-Access-Token" to config?.script?.callbackHeaders?.xAccessToken.orEmpty(),
             ),
             body = responseString,
             url = config?.script?.callbackUrl.orEmpty()
-        ).json<String> { t, httpResponse ->
-            Log.d("ExternalWebView", "performRequest: $t")
+        ).response()
+        Log.d("ExternalWebView", "performRequest: $response")
+    }
+
+    private suspend fun scriptRunner() {
+        if (!config?.selector.isNullOrEmpty()) {
+            selectorRequest(config?.selector!!.replace("\"", "'"))
+        }
+        if (!config?.scriptUrl.isNullOrEmpty()) {
+            scriptUrlRequest()
         }
     }
 
-    private suspend fun applyScript(script: ResponseDto.Payload.Script) {
-        withContext(Dispatchers.IO) {
-            val scriptText = URL(script.url).readText()
-            findWebView()?.handler?.post {
-                findWebView()?.evaluateJavascript(scriptText, null)
+    private suspend fun selectorRequest(selector: String) {
+        val script = getSelectorScript(selector)
+        evaluateScriptOnWebView(script)
+    }
+
+    private fun getSelectorScript(selector: String?) = """
+    (function() {
+        try {
+            const getIsElementDisplayed = (element) => {
+                const style = window.getComputedStyle(element);
+                return style && style.visibility !== 'hidden' && hasVisibleBoundingBox();
+                function hasVisibleBoundingBox() {
+                    const rect = element.getBoundingClientRect();
+                    return !!(rect.top || rect.bottom || rect.width || rect.height);
+                }
+            };
+
+            const selector = "${selector}";
+            const isXPath = /^\/[\s\S]*\//.test(selector);
+
+            const element = isXPath ? document.evaluate(selector, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue : document.querySelector(selector);
+
+            if (element && getIsElementDisplayed(element)) {
+                window.ReactNativeWebView.postMessage(JSON.stringify({ "event": "logged_in" }));
+            } else {
+                console.log('Element not found or not displayed');
             }
+        } catch (error) {
+            console.error('Error in WebView script:', error);
         }
-    }
+    })();
+    """
 
-    private val timerRunnable = Runnable {
-        val selector = config?.selector?.replace("\"", "'")
-
-        findWebView()?.evaluateJavascript(
-            "          (function() {\n" +
-                    "            const getIsElementDisplayed = (element) => {\n" +
-                    "              const style = window.getComputedStyle(element);\n" +
-                    "              return style && style.visibility !== 'hidden' && hasVisibleBoundingBox();\n" +
-                    "              function hasVisibleBoundingBox() {\n" +
-                    "                  const rect = element.getBoundingClientRect();\n" +
-                    "                  return !!(rect.top || rect.bottom || rect.width || rect.height);\n" +
-                    "                  }\n" +
-                    "            }\n" +
-                    "\n" +
-                    "            const selector = \"${selector}\";\n" +
-                    "            const isXPath = /^\\\\(*\\\\.*\\\\//.test(selector);\n" +
-                    "\n" +
-                    "            const element = isXPath ? document.evaluate(selector, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE).singleNodeValue : document.querySelector(selector);\n" +
-                    "\n" +
-                    "            if (element && getIsElementDisplayed(element)) {\n" +
-                    "              window.ReactNativeWebView.postMessage(JSON.stringify({ \"event\": \"logged_in\" }));\n" +
-                    "            }\n" +
-                    "          })();\n" +
-                    "        ",
-            null
-        )
-        startRefreshTimer()
-    }
-
-    private fun startRefreshTimer() {
-        findWebView()?.handler?.removeCallbacks(timerRunnable)
-        findWebView()?.handler?.postDelayed(timerRunnable, DELAY_MILLIS)
+    private suspend fun scriptUrlRequest() {
+        scriptFromUrl ?: run {
+            performScriptRequest(config?.scriptUrl!!)
+        }
+        scriptFromUrl?.let { script ->
+            evaluateScriptOnWebView(script)
+        }
     }
 
     fun setContentView() {
@@ -182,6 +239,18 @@ class ExternalWebViewBottomSheet(
         startProgressAnimation(contentView.context)
     }
 
+    private val scriptTimer = object : CountDownTimer(Long.MAX_VALUE, 1000) {
+
+        override fun onTick(millisUntilFinished: Long) {
+            lifecycleScope.launch {
+                scriptRunner()
+            }
+        }
+
+        override fun onFinish() {
+
+        }
+    }
 
     private val cookiesUpdateTimer = object : CountDownTimer(Long.MAX_VALUE, 1000) {
 
@@ -192,29 +261,37 @@ class ExternalWebViewBottomSheet(
                     return@evaluateJavascript
                 }
                 val seenURLs = truvWebViewClient.getSeenPages()
-                Log.d("ProviderWebView", "Collecting cookies from seen urls: ${seenURLs.joinToString(", ")}")
+                Log.d(
+                    "ProviderWebView",
+                    "Collecting cookies from seen urls: ${seenURLs.joinToString(", ")}"
+                )
 
                 val dashboardUrl = findWebView()?.url
 
                 val allCookies = seenURLs.fold(listOf<Cookie>()) { acc, url ->
                     val cookies = CookieManager.getInstance().getCookie(url) ?: return@fold acc
-                    val cookieStrings = cookies.split(";".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+                    val cookieStrings =
+                        cookies.split(";".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
                     val domain = URL(url).host
-                    val topLevelDomain = "." + domain.split(".").dropLastWhile { it.isEmpty() }.takeLast(2).joinToString(".")
+                    val topLevelDomain =
+                        "." + domain.split(".").dropLastWhile { it.isEmpty() }.takeLast(2)
+                            .joinToString(".")
 
                     val list = cookieStrings
-                        .map { it.split("=".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray() }
+                        .map {
+                            it.split("=".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+                        }
                         .filter { it.size == 2 }
                         .map { split ->
-                        return@map Cookie(
-                            name = split[0].trim(),
-                            value = split[1],
-                            domain = topLevelDomain,
-                            path = "/",
-                            secure = false,
-                            httpOnly = false,
-                        )
-                    }
+                            return@map Cookie(
+                                name = split[0].trim(),
+                                value = split[1],
+                                domain = topLevelDomain,
+                                path = "/",
+                                secure = false,
+                                httpOnly = false,
+                            )
+                        }
 
                     return@fold acc.plus(list)
                 }
@@ -231,15 +308,31 @@ class ExternalWebViewBottomSheet(
         }
     }
 
-    fun getSelectorScript(): String {
-       return "window.document.evaluate(\"${config?.selector}\", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue != null"
+    private suspend fun evaluateScriptOnWebView(script: String) = withContext(Dispatchers.Main) {
+        try {
+            if (findWebView()?.isVisible == true) {
+                findWebView()?.evaluateJavascript(script, null)
+            } else {
+                Log.d("ExternalWebView", "WebView is not visible")
+            }
+        } catch (ex: Exception) {
+            Log.e("ExternalWebView", "Error applying script", ex)
+        }
+
     }
+
+    fun getSelectorScript(): String {
+        return "window.document.evaluate(\"${config?.selector}\", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue != null"
+    }
+
     override fun dismiss() {
-        findWebView()?.handler?.removeCallbacks(timerRunnable)
+        scriptTimer.cancel()
         cookiesUpdateTimer.cancel()
         super.dismiss()
     }
 
+    fun findErrorLoading(): View? = findViewById(R.id.errorLoadingLayout)
+    fun findErrorRetryButton(): View? = findViewById(R.id.btnTryAgain)
     fun findWebView(): WebView? = findViewById(R.id.webview)
     fun findProgressBar(): View? = findViewById(R.id.progress_bar)
     fun findTitle(): TextView? = findViewById(R.id.title)
