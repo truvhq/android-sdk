@@ -48,7 +48,6 @@ class ExternalWebViewBottomSheet(
                     findWebView()?.reload()
                 }
                 findTitle()?.text = value.url
-                scriptTimer.start()
             }
         }
 
@@ -147,55 +146,9 @@ class ExternalWebViewBottomSheet(
         Log.d("ExternalWebView", "performRequest: $response")
     }
 
-    private suspend fun scriptRunner() {
-        if (!config?.selector.isNullOrEmpty()) {
-            selectorRequest(config?.selector!!.replace("\"", "'"))
-        }
-        if (!config?.scriptUrl.isNullOrEmpty()) {
-            scriptUrlRequest()
-        }
-    }
-
-    private suspend fun selectorRequest(selector: String) {
-        val script = getSelectorScript(selector)
-        evaluateScriptOnWebView(script)
-    }
-
-    private fun getSelectorScript(selector: String?) = """
-    (function() {
-        try {
-            const getIsElementDisplayed = (element) => {
-                const style = window.getComputedStyle(element);
-                return style && style.visibility !== 'hidden' && hasVisibleBoundingBox();
-                function hasVisibleBoundingBox() {
-                    const rect = element.getBoundingClientRect();
-                    return !!(rect.top || rect.bottom || rect.width || rect.height);
-                }
-            };
-
-            const selector = "${selector}";
-            const isXPath = /^\/[\s\S]*\//.test(selector);
-
-            const element = isXPath ? document.evaluate(selector, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue : document.querySelector(selector);
-
-            if (element && getIsElementDisplayed(element)) {
-                window.ReactNativeWebView.postMessage(JSON.stringify({ "event": "logged_in" }));
-            } else {
-                console.log('Element not found or not displayed');
-            }
-        } catch (error) {
-            console.error('Error in WebView script:', error);
-        }
-    })();
-    """
-
-    private suspend fun scriptUrlRequest() {
-        scriptFromUrl ?: run {
-            performScriptRequest(config?.scriptUrl!!)
-        }
-        scriptFromUrl?.let { script ->
-            evaluateScriptOnWebView(script)
-        }
+    private suspend fun loadScriptUrlRequest(): String? {
+        if (config?.scriptUrl == null) return null
+        return scriptFromUrl ?: run { config?.scriptUrl?.let { performScriptRequest(it) } }
     }
 
     fun setContentView() {
@@ -239,67 +192,62 @@ class ExternalWebViewBottomSheet(
         startProgressAnimation(contentView.context)
     }
 
-    private val scriptTimer = object : CountDownTimer(Long.MAX_VALUE, 1000) {
-
-        override fun onTick(millisUntilFinished: Long) {
-            lifecycleScope.launch {
-                scriptRunner()
-            }
-        }
-
-        override fun onFinish() {
-
-        }
-    }
-
     private val cookiesUpdateTimer = object : CountDownTimer(Long.MAX_VALUE, 1000) {
 
         override fun onTick(millisUntilFinished: Long) {
-            findWebView()?.evaluateJavascript(getSelectorScript()) {
-                Log.d("ProviderWebView", "WebView evaluate status: $it")
-                if (it == "false") {
-                    return@evaluateJavascript
-                }
-                val seenURLs = truvWebViewClient.getSeenPages()
-                Log.d(
-                    "ProviderWebView",
-                    "Collecting cookies from seen urls: ${seenURLs.joinToString(", ")}"
-                )
-
-                val dashboardUrl = findWebView()?.url
-
-                val allCookies = seenURLs.fold(listOf<Cookie>()) { acc, url ->
-                    val cookies = CookieManager.getInstance().getCookie(url) ?: return@fold acc
-                    val cookieStrings =
-                        cookies.split(";".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-                    val domain = URL(url).host
-                    val topLevelDomain =
-                        "." + domain.split(".").dropLastWhile { it.isEmpty() }.takeLast(2)
-                            .joinToString(".")
-
-                    val list = cookieStrings
-                        .map {
-                            it.split("=".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+            lifecycleScope.launch(Dispatchers.Default) {
+                val selectorScript = getSelectorScript() ?: return@launch
+                withContext(Dispatchers.Main) {
+                    findWebView()?.evaluateJavascript(selectorScript) { result ->
+                        Log.d("ProviderWebView", "WebView evaluate status: $result")
+                        if (result == "false") {
+                            return@evaluateJavascript
                         }
-                        .filter { it.size == 2 }
-                        .map { split ->
-                            return@map Cookie(
-                                name = split[0].trim(),
-                                value = split[1],
-                                domain = topLevelDomain,
-                                path = "/",
-                                secure = false,
-                                httpOnly = false,
-                            )
+                        val seenURLs = truvWebViewClient.getSeenPages()
+                        Log.d(
+                            "ProviderWebView",
+                            "Collecting cookies from seen urls: ${seenURLs.joinToString(", ")}"
+                        )
+
+                        val dashboardUrl = findWebView()?.url
+
+                        val allCookies = seenURLs.fold(listOf<Cookie>()) { acc, url ->
+                            val cookies =
+                                CookieManager.getInstance().getCookie(url) ?: return@fold acc
+                            val cookieStrings =
+                                cookies.split(";".toRegex()).dropLastWhile { it.isEmpty() }
+                                    .toTypedArray()
+                            val domain = URL(url).host
+                            val topLevelDomain =
+                                "." + domain.split(".").dropLastWhile { it.isEmpty() }.takeLast(2)
+                                    .joinToString(".")
+
+                            val list = cookieStrings
+                                .map {
+                                    it.split("=".toRegex()).dropLastWhile { it.isEmpty() }
+                                        .toTypedArray()
+                                }
+                                .filter { it.size == 2 }
+                                .map { split ->
+                                    return@map Cookie(
+                                        name = split[0].trim(),
+                                        value = split[1],
+                                        domain = topLevelDomain,
+                                        path = "/",
+                                        secure = false,
+                                        httpOnly = false,
+                                    )
+                                }
+
+                            return@fold acc.plus(list)
                         }
 
-                    return@fold acc.plus(list)
+                        Log.d("ProviderWebView", "All cookies: $allCookies")
+
+                        onCookie(allCookies, dashboardUrl ?: "")
+                        dismiss()
+                    }
                 }
-
-                Log.d("ProviderWebView", "All cookies: $allCookies")
-
-                onCookie(allCookies, dashboardUrl ?: "")
-                this.cancel()
             }
         }
 
@@ -321,12 +269,19 @@ class ExternalWebViewBottomSheet(
 
     }
 
-    fun getSelectorScript(): String {
-        return "window.document.evaluate(\"${config?.selector}\", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue != null"
+    suspend fun getSelectorScript(): String? {
+        scriptFromUrl = loadScriptUrlRequest()
+        return when {
+            scriptFromUrl != null -> return scriptFromUrl
+            config?.selector != null -> "window.document.evaluate(\"${config?.selector}\", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue != null"
+            else -> {
+                Log.e("ExternalWebView", "No selector or scriptUrl provided")
+                null
+            }
+        }
     }
 
     override fun dismiss() {
-        scriptTimer.cancel()
         cookiesUpdateTimer.cancel()
         super.dismiss()
     }
