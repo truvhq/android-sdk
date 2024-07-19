@@ -294,8 +294,7 @@ class ExternalWebViewBottomSheet(
                         }
                     return@fold acc.plus(list)
                 }
-                    .distinctBy { it.domain }
-                    .distinctBy { it.name }
+                    .distinctBy { Pair(it.domain,it.name) }
 
                 Log.d("ProviderWebView", "All cookies: $allCookies")
 
