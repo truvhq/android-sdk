@@ -292,6 +292,8 @@ class ExternalWebViewBottomSheet(
                                 httpOnly = false,
                             )
                         }
+                        .distinctBy { it.domain }
+                        .distinctBy { it.name }
 
                     return@fold acc.plus(list)
                 }
