@@ -214,24 +214,24 @@ class ExternalWebViewBottomSheet(
                         val allCookies = seenURLs.fold(listOf<Cookie>()) { acc, url ->
                             val cookies =
                                 CookieManager.getInstance().getCookie(url) ?: return@fold acc
+                            Log.d("ProviderWebView", "cookies for $url: $cookies")
                             val cookieStrings =
                                 cookies.split(";".toRegex()).dropLastWhile { it.isEmpty() }
                                     .toTypedArray()
                             val domain = URL(url).host
-                            val topLevelDomain =
-                                "." + domain.split(".").dropLastWhile { it.isEmpty() }.takeLast(2)
-                                    .joinToString(".")
+                            val topLevelDomain = ".$domain"
 
-                            val list = cookieStrings
-                                .map {
-                                    it.split("=".toRegex()).dropLastWhile { it.isEmpty() }
-                                        .toTypedArray()
-                                }
-                                .filter { it.size == 2 }
-                                .map { split ->
-                                    return@map Cookie(
-                                        name = split[0].trim(),
-                                        value = split[1],
+                            val list = cookieStrings.mapNotNull { cookieString ->
+                                    val equalIndex = cookieString.indexOf('=')
+                                    if (equalIndex == -1) {
+                                        return@mapNotNull null
+                                    }
+                                    val name = cookieString.substring(0, equalIndex).trim()
+                                    val value = cookieString.substring(equalIndex + 1).trim()
+
+                                    return@mapNotNull Cookie(
+                                        name = name,
+                                        value = value,
                                         domain = topLevelDomain,
                                         path = "/",
                                         secure = false,
@@ -241,6 +241,7 @@ class ExternalWebViewBottomSheet(
 
                             return@fold acc.plus(list)
                         }
+                            .distinctBy { Pair(it.domain,it.name) }
 
                         Log.d("ProviderWebView", "All cookies: $allCookies")
 
