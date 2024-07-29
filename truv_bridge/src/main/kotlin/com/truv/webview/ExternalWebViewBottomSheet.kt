@@ -203,7 +203,7 @@ class ExternalWebViewBottomSheet(
                         if (result == "false") {
                             return@evaluateJavascript
                         }
-                        val seenURLs = truvWebViewClient.getSeenPages()
+                        val seenURLs = truvWebViewClient.getSeenPages().toList()
                         Log.d(
                             "ProviderWebView",
                             "Collecting cookies from seen urls: ${seenURLs.joinToString(", ")}"
