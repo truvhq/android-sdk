@@ -17,13 +17,13 @@ allprojects {
 **Step 2**. Add the dependency to your ```build.gradle``` file:
   
 ``` groovy
-implementation 'com.github.truvhq:android-sdk:1.4.4'
+implementation 'com.github.truvhq:android-sdk:1.4.7'
 ```
 
 Or ```build.gradle.kts``` if you prefer Kotlin DSL
 
 ```kotlin
-implementation("com.github.truvhq:android-sdk:1.4.4")
+implementation("com.github.truvhq:android-sdk:1.4.7")
 ```
 
 The TruvSDK is available via JitPack [![](https://jitpack.io/v/truvhq/android-sdk.svg)](https://jitpack.io/#truvhq/android-sdk)
