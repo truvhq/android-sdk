@@ -7,7 +7,7 @@ plugins {
 android {
     namespace = "com.truv"
     compileSdk 34
-    def versionNameString = "\"1.4.4\""
+    def versionNameString = "\"1.5.0\""
     defaultConfig {
         minSdk 21
         targetSdk 34

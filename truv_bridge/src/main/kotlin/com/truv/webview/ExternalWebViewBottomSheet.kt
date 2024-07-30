@@ -47,7 +47,7 @@ class ExternalWebViewBottomSheet(
                 findRefresher()?.setOnClickListener {
                     findWebView()?.reload()
                 }
-                findTitle()?.text = value.url
+                findTitle()?.text = getDomainFromUrl(value.url)
             }
         }
 
