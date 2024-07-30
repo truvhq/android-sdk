@@ -27,6 +27,7 @@ class TruvWebViewClient(
         if (request.requestHeaders.containsKey("X-Requested-With")) {
             request.requestHeaders.remove("X-Requested-With")
         }
+        seenURLs.add(request.url.toString())
         return super.shouldInterceptRequest(view, request)
     }
 
