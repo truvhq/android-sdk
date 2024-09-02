@@ -44,3 +44,25 @@ android {
     }
 
 }
+
+ext {
+    PUBLISH_GROUP_ID = 'com.github.truvhq'
+    PUBLISH_VERSION = '1.5.0'
+    PUBLISH_ARTIFACT_ID = 'android_sdk'
+    PUBLISH_DESCRIPTION = 'Truv SDK Android'
+    PUBLISH_URL = 'https://github.com/truvhq/android-sdk'
+    PUBLISH_LICENSE_NAME = 'Apache License'
+    PUBLISH_LICENSE_URL =
+            'https://github.com/truvhq/android-sdk/blob/master/LICENSE'
+    PUBLISH_DEVELOPER_ID = 'MikhailZisman'
+    PUBLISH_DEVELOPER_NAME = 'Mikhail Zisman'
+    PUBLISH_DEVELOPER_EMAIL = 'mikhail.zisman@truv.com'
+    PUBLISH_SCM_CONNECTION =
+            'scm:git@github.com:truvhq/android-sdk.git'
+    PUBLISH_SCM_DEVELOPER_CONNECTION =
+            'scm:git:ssh://github.com/truvhq/android-sdk.git'
+    PUBLISH_SCM_URL =
+            'https://github.com/MikhailZisman/truvhq/android-sdk/tree/master'
+}
+
+apply from: "${rootProject.projectDir}/scripts/publish-module.gradle"

@@ -8,8 +8,18 @@ buildscript {
 plugins {
     id 'com.android.library' version '7.2.1' apply false
     id 'org.jetbrains.kotlin.android' version '1.9.10' apply false
+    id 'io.github.gradle-nexus.publish-plugin' version '2.0.0' apply false
 }
 
 tasks.register('clean', Delete) {
     delete rootProject.buildDir
 }
+apply plugin: 'io.github.gradle-nexus.publish-plugin'
+ext["signing.keyId"] = 'AC5634A9'
+ext["signing.password"] = '(z<o6|3UKDs)'
+ext["signing.secretKeyRingFile"] = 'SecretRingKey.gpg'
+
+//
+//signing.keyId=AC5634A9
+//signing.password=(z<o6|3UKDs)
+//signing.secretKeyRingFile='SecretRingKey.gpg'
