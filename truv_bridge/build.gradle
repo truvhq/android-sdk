@@ -1,7 +1,10 @@
+import com.vanniktech.maven.publish.SonatypeHost
+
 plugins {
     id 'com.android.library'
     id 'org.jetbrains.kotlin.android'
     id 'org.jetbrains.kotlin.plugin.serialization' version '1.9.10'
+    id("com.vanniktech.maven.publish") version "0.29.0"
 }
 
 android {
@@ -27,6 +30,25 @@ android {
         }
     }
 
+
+    def keystorePropertiesFile = rootProject.file("keystore.properties")
+
+    def keystoreProperties = new Properties()
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+
+
+    signingConfigs {
+        release {
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+            storeFile file(keystoreProperties['storeFile'])
+            storePassword keystoreProperties['storePassword']
+        }
+        debug {
+
+        }
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
@@ -42,27 +64,12 @@ android {
         implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2"
         implementation "androidx.browser:browser:1.7.0"
     }
-
+    buildFeatures {
+        buildConfig = true
+    }
 }
 
-ext {
-    PUBLISH_GROUP_ID = 'com.github.truvhq'
-    PUBLISH_VERSION = '1.5.0'
-    PUBLISH_ARTIFACT_ID = 'android_sdk'
-    PUBLISH_DESCRIPTION = 'Truv SDK Android'
-    PUBLISH_URL = 'https://github.com/truvhq/android-sdk'
-    PUBLISH_LICENSE_NAME = 'Apache License'
-    PUBLISH_LICENSE_URL =
-            'https://github.com/truvhq/android-sdk/blob/master/LICENSE'
-    PUBLISH_DEVELOPER_ID = 'MikhailZisman'
-    PUBLISH_DEVELOPER_NAME = 'Mikhail Zisman'
-    PUBLISH_DEVELOPER_EMAIL = 'mikhail.zisman@truv.com'
-    PUBLISH_SCM_CONNECTION =
-            'scm:git@github.com:truvhq/android-sdk.git'
-    PUBLISH_SCM_DEVELOPER_CONNECTION =
-            'scm:git:ssh://github.com/truvhq/android-sdk.git'
-    PUBLISH_SCM_URL =
-            'https://github.com/MikhailZisman/truvhq/android-sdk/tree/master'
+mavenPublishing {
+    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
+    signAllPublications()
 }
-
-apply from: "${rootProject.projectDir}/scripts/publish-module.gradle"
