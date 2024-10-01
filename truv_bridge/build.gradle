@@ -1,7 +1,10 @@
+import com.vanniktech.maven.publish.SonatypeHost
+
 plugins {
     id 'com.android.library'
     id 'org.jetbrains.kotlin.android'
     id 'org.jetbrains.kotlin.plugin.serialization' version '1.9.10'
+    id("com.vanniktech.maven.publish") version "0.29.0"
 }
 
 android {
@@ -27,6 +30,25 @@ android {
         }
     }
 
+
+    def keystorePropertiesFile = rootProject.file("keystore.properties")
+
+    def keystoreProperties = new Properties()
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+
+
+    signingConfigs {
+        release {
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+            storeFile file(keystoreProperties['storeFile'])
+            storePassword keystoreProperties['storePassword']
+        }
+        debug {
+
+        }
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
@@ -42,5 +64,12 @@ android {
         implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2"
         implementation "androidx.browser:browser:1.7.0"
     }
+    buildFeatures {
+        buildConfig = true
+    }
+}
 
+mavenPublishing {
+    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
+    signAllPublications()
 }
