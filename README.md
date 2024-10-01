@@ -9,7 +9,7 @@
 ```groovy
 allprojects {
     repositories {
-        maven { url 'https://jitpack.io' }
+        mavenCentral()
     }
 }
 ```
@@ -17,16 +17,14 @@ allprojects {
 **Step 2**. Add the dependency to your ```build.gradle``` file:
   
 ``` groovy
-implementation 'com.github.truvhq:android-sdk:1.5.0'
+implementation 'com.truv.sdk:android-sdk:1.5.0'
 ```
 
 Or ```build.gradle.kts``` if you prefer Kotlin DSL
 
 ```kotlin
-implementation("com.github.truvhq:android-sdk:1.5.0")
+implementation("com.truv.sdk:android-sdk:1.5.0")
 ```
-
-The TruvSDK is available via JitPack [![](https://jitpack.io/v/truvhq/android-sdk.svg)](https://jitpack.io/#truvhq/android-sdk)
 
 ### TruvBridgeView
 

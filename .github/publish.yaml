@@ -1,0 +1,81 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - v*
+    branches:
+      - master
+
+  workflow_dispatch:
+    inputs:
+      should-publish:
+        type: boolean
+        description: "Do you want to publish the library?"
+        default: false
+        required: true
+
+      release-version:
+        type: string
+        description: "Specify the version to release"
+        required: true
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: 17
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v3
+
+      - name: Check Gradle wrapper
+        uses: gradle/wrapper-validation-action@v2
+
+      - name: Set Version Name
+        run: |
+          sed -i 's/^VERSION_NAME=.*/VERSION_NAME=${{ env.RELEASE_VERSION }}/' gradle.properties
+        env:
+          RELEASE_VERSION: ${{ github.event.inputs.release-version }}
+
+      - name: 🚀 Publish Library on Maven Central
+        if: always() && (github.event.inputs.should-publish == 'true')
+        run: ./gradlew publishAndReleaseToMavenCentral --no-configuration-cache
+        env:
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.GPG_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.GPG_PASSWORD }}
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          RELEASE_VERSION: ${{ github.event.inputs.release-version }}
+
+      - name: 🔨Assemble
+        if: always() && (github.event.inputs.should-publish == 'true')
+        run: ./gradlew :reusablecomponents:assemble
+        env:
+          RELEASE_VERSION: ${{ github.event.inputs.release-version }}
+
+      - name: ⚙️ Create Release
+        if: always() && (github.event.inputs.should-publish == 'true')
+        run: |
+          gh release create "$tag" \
+              --repo="$GITHUB_REPOSITORY" \
+              --title="v${{ github.event.inputs.release-version }}" \
+              --generate-notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          tag: v${{ github.event.inputs.release-version }}
+          RELEASE_VERSION: ${{ github.event.inputs.release-version }}

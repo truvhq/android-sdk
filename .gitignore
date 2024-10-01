@@ -16,6 +16,8 @@
 .externalNativeBuild
 .cxx
 local.properties
+keystore.properties
+signing.properties
 
 /.idea
 .gradle/

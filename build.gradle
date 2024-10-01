@@ -6,10 +6,19 @@ buildscript {
 }
 
 plugins {
-    id 'com.android.library' version '7.2.1' apply false
+    id 'com.android.library' version '8.6.0' apply false
     id 'org.jetbrains.kotlin.android' version '1.9.10' apply false
+    id 'io.github.gradle-nexus.publish-plugin' version '2.0.0' apply false
 }
 
 tasks.register('clean', Delete) {
     delete rootProject.buildDir
 }
+apply plugin: 'io.github.gradle-nexus.publish-plugin'
+def signingPropertiesFile = rootProject.file("signing.properties")
+
+def signingProperties = new Properties()
+signingProperties.load(new FileInputStream(signingPropertiesFile))
+ext["signing.keyId"] = signingProperties['keyId']
+ext["signing.password"] = signingProperties['password']
+ext["signing.secretKeyRingFile"] = signingProperties['secretKeyRingFile']
