@@ -80,6 +80,6 @@ class TruvWebViewClient(
     }
 
     fun getSeenPages(): Set<String> {
-        return seenURLs
+        return seenURLs.toSet()
     }
 }

@@ -17,13 +17,13 @@ allprojects {
 **Step 2**. Add the dependency to your ```build.gradle``` file:
   
 ``` groovy
-implementation 'com.truv.sdk:android-sdk:1.5.0'
+implementation 'com.truv.sdk:android-sdk:1.5.2'
 ```
 
 Or ```build.gradle.kts``` if you prefer Kotlin DSL
 
 ```kotlin
-implementation("com.truv.sdk:android-sdk:1.5.0")
+implementation("com.truv.sdk:android-sdk:1.5.2")
 ```
 
 ### TruvBridgeView
