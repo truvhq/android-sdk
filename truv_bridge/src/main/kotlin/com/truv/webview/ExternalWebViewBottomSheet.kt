@@ -23,6 +23,8 @@ import com.truv.models.ResponseDto
 import com.truv.network.HttpRequest
 import com.truv.webview.models.Cookie
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -192,10 +194,14 @@ class ExternalWebViewBottomSheet(
         startProgressAnimation(contentView.context)
     }
 
+    var job: Job? = null
+
+    @OptIn(ExperimentalCoroutinesApi::class)
     private val cookiesUpdateTimer = object : CountDownTimer(Long.MAX_VALUE, 1000) {
 
         override fun onTick(millisUntilFinished: Long) {
-            lifecycleScope.launch(Dispatchers.Default) {
+            job?.cancel()
+            job = lifecycleScope.launch(Dispatchers.Default.limitedParallelism(1)) {
                 val selectorScript = getSelectorScript() ?: return@launch
                 withContext(Dispatchers.Main) {
                     findWebView()?.evaluateJavascript(selectorScript) { result ->
@@ -213,7 +219,8 @@ class ExternalWebViewBottomSheet(
 
                         val allCookies = seenURLs.fold(listOf<Cookie>()) { acc, url ->
                             val cookies =
-                                CookieManager.getInstance().getCookie(url) ?: return@fold acc
+                                kotlin.runCatching { CookieManager.getInstance().getCookie(url) }
+                                    .getOrNull() ?: return@fold acc
                             Log.d("ProviderWebView", "cookies for $url: $cookies")
                             val cookieStrings =
                                 cookies.split(";".toRegex()).dropLastWhile { it.isEmpty() }
@@ -222,26 +229,26 @@ class ExternalWebViewBottomSheet(
                             val topLevelDomain = ".$domain"
 
                             val list = cookieStrings.mapNotNull { cookieString ->
-                                    val equalIndex = cookieString.indexOf('=')
-                                    if (equalIndex == -1) {
-                                        return@mapNotNull null
-                                    }
-                                    val name = cookieString.substring(0, equalIndex).trim()
-                                    val value = cookieString.substring(equalIndex + 1).trim()
-
-                                    return@mapNotNull Cookie(
-                                        name = name,
-                                        value = value,
-                                        domain = topLevelDomain,
-                                        path = "/",
-                                        secure = false,
-                                        httpOnly = false,
-                                    )
+                                val equalIndex = cookieString.indexOf('=')
+                                if (equalIndex == -1) {
+                                    return@mapNotNull null
                                 }
+                                val name = cookieString.substring(0, equalIndex).trim()
+                                val value = cookieString.substring(equalIndex + 1).trim()
+
+                                return@mapNotNull Cookie(
+                                    name = name,
+                                    value = value,
+                                    domain = topLevelDomain,
+                                    path = "/",
+                                    secure = false,
+                                    httpOnly = false,
+                                )
+                            }
 
                             return@fold acc.plus(list)
                         }
-                            .distinctBy { Pair(it.domain,it.name) }
+                            .distinctBy { Pair(it.domain, it.name) }
 
                         Log.d("ProviderWebView", "All cookies: $allCookies")
 
